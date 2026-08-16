@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogiRoute - Smart Logistics & Route Platform</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand-wrapper">
+                <div class="brand-icon">LR</div>
+                <div>
+                    <h1 class="brand-title">LogiRoute</h1>
+                    <div class="brand-subtitle">Smart Logistics & Route Management</div>
+                </div>
+            </div>
+
+            <!-- Global Module Navigation Bar -->
+            <nav class="nav-module-pills">
+                <button id="navCustomerBtn" class="nav-pill active" data-module="customer">
+                    <span>👤</span> Customer Portal
+                </button>
+                <button id="navDriversBtn" class="nav-pill" data-module="drivers">
+                    <span>🚚</span> Driver Earnings
+                </button>
+                <button id="navInventoryBtn" class="nav-pill" data-module="inventory">
+                    <span>⚠️</span> Low Stock Alerts
+                </button>
+            </nav>
+
+            <div class="header-actions">
+                <div id="userPill" class="user-pill hidden">
+                    <div id="userAvatar" class="user-avatar">A</div>
+                    <span id="userName" class="user-name">Alice Johnson</span>
+                </div>
+                <button id="logoutBtn" class="btn btn-outline btn-sm hidden">Sign Out</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Application Container -->
+    <main class="main-content">
+
+        <!-- ================================================================= -->
+        <!-- MODULE 1: CUSTOMER PORTAL & DASHBOARD (Teammate 1 - Feature 3) -->
+        <!-- ================================================================= -->
+        <div id="customerModuleWrapper">
+            <!-- Auth Section (Login & Sign Up) -->
+            <section id="authSection" class="auth-container">
+                <div class="auth-tabs">
+                    <button class="auth-tab-btn active" data-tab="login" id="tabLoginBtn">Sign In</button>
+                    <button class="auth-tab-btn" data-tab="signup" id="tabSignupBtn">Create Account</button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label" for="loginIdentifier">Customer Name or Phone</label>
+                        <input type="text" id="loginIdentifier" class="form-input" placeholder="e.g. Alice Johnson or +1-555-0101" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" id="loginSubmitBtn">
+                        Sign In to Portal
+                    </button>
+                </form>
+
+                <!-- Signup Form -->
+                <form id="signupForm" class="hidden">
+                    <div class="form-group">
+                        <label class="form-label" for="signupName">Full Name</label>
+                        <input type="text" id="signupName" class="form-input" placeholder="e.g. Eleanor Vance" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="signupPhone">Phone Number</label>
+                        <input type="tel" id="signupPhone" class="form-input" placeholder="+1-555-0199" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="signupAddress">Delivery Address & Zone</label>
+                        <input type="text" id="signupAddress" class="form-input" placeholder="452 Skyline Blvd, North Zone" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="signupCredit">Initial Store Credit ($)</label>
+                        <input type="number" id="signupCredit" class="form-input" value="0.00" step="5.00" min="0">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" id="signupSubmitBtn">
+                        Create Customer Account
+                    </button>
+                </form>
+
+                <!-- Instant One-Click Demo Customer Switcher -->
+                <div class="demo-customers-box">
+                    <div class="demo-title">Quick Demo Login (Pre-seeded Accounts)</div>
+                    <div id="demoChipsContainer" class="demo-chips">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Customer Dashboard Section -->
+            <section id="dashboardSection" class="hidden">
+                <!-- Dashboard Welcome Banner -->
+                <div class="dashboard-header">
+                    <div>
+                        <h2 class="dashboard-heading">Welcome back, <span id="customerNameEl">Alice</span>!</h2>
+                        <p class="dashboard-subheading">
+                            <span id="customerAddressEl">124 Elm Street, North Zone</span> • <span id="customerPhoneEl">+1-555-0101</span>
+                        </p>
+                    </div>
+                    <div>
+                        <button id="openNewOrderBtn" class="btn btn-primary">
+                            <span>+</span> Place New Order
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI Metric Summary Grid -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-card-header">
+                            <span class="metric-label">Store Credit Balance</span>
+                            <span class="metric-badge" style="background: var(--accent-success-bg); color: var(--accent-success);">Available</span>
+                        </div>
+                        <div id="metricStoreCredit" class="metric-value highlight-credit">$0.00</div>
+                        <div class="metric-subtext">Automatically credited on approved returns</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-card-header">
+                            <span class="metric-label">Total Orders</span>
+                            <span class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">Lifetime</span>
+                        </div>
+                        <div id="metricTotalOrders" class="metric-value">0</div>
+                        <div class="metric-subtext">Processed across all fulfillment hubs</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-card-header">
+                            <span class="metric-label">Active Shipments</span>
+                            <span class="metric-badge" style="background: var(--accent-warning-bg); color: var(--accent-warning);">Live</span>
+                        </div>
+                        <div id="metricActiveOrders" class="metric-value">0</div>
+                        <div class="metric-subtext">Pending queue & dispatched drivers</div>
+                    </div>
+
+                    <div class="metric-card">
+                        <div class="metric-card-header">
+                            <span class="metric-label">Avg Rating Given</span>
+                            <span class="metric-badge" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24;">Feedback</span>
+                        </div>
+                        <div id="metricAvgRating" class="metric-value">★ 5.0</div>
+                        <div class="metric-subtext">Based on your delivered orders</div>
+                    </div>
+                </div>
+
+                <!-- Main Split Grid: Order History & Returns -->
+                <div class="dashboard-grid">
+                    <!-- Left Column: Order History -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <span>📦</span> Order History & Delivery Status
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="ordersListContainer" class="order-list">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Returns & Info -->
+                    <div style="display: flex; flex-direction: column; gap: 1.75rem;">
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span>↩️</span> Returns & Refund Tracking
+                                </h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="returnsListContainer" class="returns-list">
+                                    <!-- Populated dynamically via JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-card" style="background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(37, 99, 235, 0.05) 100%);">
+                            <div class="card-body">
+                                <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem;">Feature Scope Reference</h4>
+                                <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45;">
+                                    <strong>Teammate 1 - Feature 3 (Customer Dashboard)</strong>: Unified aggregate view connecting <code style="color: #60a5fa;">Customer</code>, <code style="color: #60a5fa;">Orders</code>, <code style="color: #60a5fa;">Order_Items</code>, and <code style="color: #60a5fa;">Returns</code> with live ratings and return requests.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- MODULE 2: DRIVER EARNINGS & PAYCHECK (Teammate 2 - Feature 2) -->
+        <!-- ================================================================= -->
+        <section id="driverEarningsSection" class="hidden">
+            <!-- Header & Fleet KPIs -->
+            <div class="dashboard-header">
+                <div>
+                    <h2 class="dashboard-heading">🚚 Driver Earnings & Payroll</h2>
+                    <p class="dashboard-subheading">
+                        Weekly paycheck calculation: <code>base_rate</code> per trip plus <code>per_km_bonus × distance_miles</code>, summed from trips into paycheck.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button id="openLogTripModalBtn" class="btn btn-primary">
+                        <span>+</span> Log Completed Trip
+                    </button>
+                </div>
+            </div>
+
+            <!-- Driver Fleet KPIs -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Active Drivers</span>
+                        <span class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">Fleet</span>
+                    </div>
+                    <div id="driverKpiTotalDrivers" class="metric-value">0</div>
+                    <div class="metric-subtext">Registered delivery drivers in service</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Total Trips Logged</span>
+                        <span class="metric-badge" style="background: var(--accent-warning-bg); color: var(--accent-warning);">Completed</span>
+                    </div>
+                    <div id="driverKpiTotalTrips" class="metric-value">0</div>
+                    <div class="metric-subtext">Total deliveries completed across fleet</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Total Distance</span>
+                        <span class="metric-badge" style="background: rgba(147, 51, 234, 0.12); color: #c084fc;">Mileage</span>
+                    </div>
+                    <div id="driverKpiTotalDistance" class="metric-value">0 mi</div>
+                    <div class="metric-subtext">Cumulative delivery mileage recorded</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Lifetime Compensation</span>
+                        <span class="metric-badge" style="background: var(--accent-success-bg); color: var(--accent-success);">Earnings</span>
+                    </div>
+                    <div id="driverKpiTotalPayout" class="metric-value highlight-credit">$0.00</div>
+                    <div class="metric-subtext">Summed base rates and mileage bonuses</div>
+                </div>
+            </div>
+
+            <!-- Driver Selection Ribbon -->
+            <div class="driver-select-bar">
+                <span class="driver-select-label">Select Fleet Driver:</span>
+                <div id="driverPillsContainer" class="driver-pills-list">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Selected Driver Details & Live Calculator Grid -->
+            <div class="earnings-main-grid">
+                <!-- Left: Selected Driver Rates & Profile Card -->
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span>👤</span> <span id="currentDriverTitleName">Driver Details</span>
+                        </h3>
+                        <span id="currentDriverStatusBadge" class="badge badge-delivered">Available</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="driver-rate-cards-grid">
+                            <div class="rate-subcard">
+                                <div class="rate-subcard-title">Base Rate Per Trip</div>
+                                <div id="currentDriverBaseRate" class="rate-subcard-val">$25.00</div>
+                                <div class="rate-subcard-desc">Fixed rate awarded per completed trip</div>
+                            </div>
+                            <div class="rate-subcard">
+                                <div class="rate-subcard-title">Mileage Bonus Rate</div>
+                                <div id="currentDriverMileageBonus" class="rate-subcard-val">$0.45 / mi</div>
+                                <div class="rate-subcard-desc">Variable rate per recorded mile</div>
+                            </div>
+                            <div class="rate-subcard">
+                                <div class="rate-subcard-title">Driver Rating</div>
+                                <div id="currentDriverRating" class="rate-subcard-val" style="color: #fbbf24;">★ 4.85</div>
+                                <div class="rate-subcard-desc">Calculated from customer reviews</div>
+                            </div>
+                            <div class="rate-subcard">
+                                <div class="rate-subcard-title">Lifetime Trips</div>
+                                <div id="currentDriverLifetimeTrips" class="rate-subcard-val">0</div>
+                                <div class="rate-subcard-desc">Total completed deliveries</div>
+                            </div>
+                        </div>
+
+                        <!-- Paycheck Calculation Formula Box -->
+                        <div class="calculation-box">
+                            <div class="calc-box-header">
+                                <div class="calc-box-title">
+                                    <span>🧮</span> Weekly Paycheck Calculation Simulator
+                                </div>
+                                <div class="date-presets">
+                                    <button class="btn btn-outline btn-sm date-preset-btn active" data-preset="last7">Past 7 Days</button>
+                                    <button class="btn btn-outline btn-sm date-preset-btn" data-preset="thisWeek">This Week</button>
+                                    <button class="btn btn-outline btn-sm date-preset-btn" data-preset="allTime">All Recorded</button>
+                                </div>
+                            </div>
+
+                            <div class="calc-date-inputs">
+                                <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                                    <label class="form-label" for="calcWeekStart">Week Start Date</label>
+                                    <input type="date" id="calcWeekStart" class="form-input">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                                    <label class="form-label" for="calcWeekEnd">Week End Date</label>
+                                    <input type="date" id="calcWeekEnd" class="form-input">
+                                </div>
+                                <div style="display: flex; align-items: flex-end;">
+                                    <button id="recalculateEarningsBtn" class="btn btn-secondary" style="height: 38px;">
+                                        Calculate
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Live Breakdown Breakdown -->
+                            <div class="formula-breakdown-card">
+                                <div class="formula-title">
+                                    Formula: <code>Weekly Pay = (Trips × Base Rate) + (Total Distance × Mileage Bonus)</code>
+                                </div>
+                                <div class="formula-steps-grid">
+                                    <div class="step-card">
+                                        <div class="step-label">1. Base Pay Subtotal</div>
+                                        <div id="stepBasePay" class="step-value">$0.00</div>
+                                        <div id="stepBaseFormula" class="step-desc">0 trips × $25.00</div>
+                                    </div>
+                                    <div class="step-card">
+                                        <div class="step-label">2. Mileage Bonus Subtotal</div>
+                                        <div id="stepMileagePay" class="step-value">$0.00</div>
+                                        <div id="stepMileageFormula" class="step-desc">0.00 mi × $0.45</div>
+                                    </div>
+                                    <div class="step-card highlight">
+                                        <div class="step-label">3. Total Weekly Paycheck</div>
+                                        <div id="stepTotalEarnings" class="step-value highlight-credit">$0.00</div>
+                                        <div id="stepPaycheckStatus" class="step-desc">Calculated from 0 trips</div>
+                                    </div>
+                                </div>
+
+                                <div class="calc-action-bar">
+                                    <div id="paycheckIssuedNotice" class="paycheck-notice">
+                                        <!-- Dynamic status -->
+                                    </div>
+                                    <button id="generatePaycheckActionBtn" class="btn btn-success">
+                                        <span>💳</span> Generate & Record Paycheck
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Trips Log & Issued Paychecks History -->
+                <div style="display: flex; flex-direction: column; gap: 1.75rem;">
+                    <!-- Trips Log -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <span>🗺️</span> Trips Completed
+                            </h3>
+                            <span id="driverTripCountBadge" class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">0 Trips</span>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Trip ID</th>
+                                            <th>Start Time</th>
+                                            <th>Distance</th>
+                                            <th style="text-align: right;">Calculated Pay</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="driverTripsTableBody">
+                                        <!-- Populated dynamically via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paychecks History -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <span>📜</span> Issued Paychecks History
+                            </h3>
+                            <span id="driverPaycheckCountBadge" class="metric-badge" style="background: var(--accent-success-bg); color: var(--accent-success);">0 Records</span>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Paycheck ID</th>
+                                            <th>Week Period</th>
+                                            <th>Status</th>
+                                            <th style="text-align: right;">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="driverPaychecksTableBody">
+                                        <!-- Populated dynamically via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- MODULE 3: LOW STOCK ALERT & INVENTORY (Teammate 3 - Feature 2) -->
+        <!-- ================================================================= -->
+        <section id="lowStockSection" class="hidden">
+            <!-- Header & KPIs -->
+            <div class="dashboard-header">
+                <div>
+                    <h2 class="dashboard-heading">⚠️ Low Stock Alert & Inventory Monitor</h2>
+                    <p class="dashboard-subheading">
+                        Real-time stock evaluation querying <code>Warehouse_Stocks</code> where <code>stock_quantity &lt; safety_threshold</code>.
+                    </p>
+                </div>
+                <div class="inventory-view-toggle">
+                    <button id="viewAlertsTabBtn" class="btn btn-primary btn-sm">Alerts Feed</button>
+                    <button id="viewMatrixTabBtn" class="btn btn-outline btn-sm">Full Stock Matrix</button>
+                </div>
+            </div>
+
+            <!-- Inventory Health KPIs -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Low Stock Alerts</span>
+                        <span class="metric-badge" style="background: var(--accent-danger-bg); color: var(--accent-danger);">Action Required</span>
+                    </div>
+                    <div id="invKpiTotalAlerts" class="metric-value" style="color: var(--accent-danger);">0</div>
+                    <div class="metric-subtext">Items below configured safety thresholds</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Critical Shortages</span>
+                        <span class="metric-badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">Urgent</span>
+                    </div>
+                    <div id="invKpiCriticalAlerts" class="metric-value" style="color: #f87171;">0</div>
+                    <div class="metric-subtext">Stock &le; 35% of safety threshold</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Total Shortage Deficit</span>
+                        <span class="metric-badge" style="background: var(--accent-warning-bg); color: var(--accent-warning);">Deficit</span>
+                    </div>
+                    <div id="invKpiTotalDeficit" class="metric-value">0 units</div>
+                    <div class="metric-subtext">Total replenishment required to meet safety</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Warehouses Monitored</span>
+                        <span class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">Active</span>
+                    </div>
+                    <div id="invKpiTotalWarehouses" class="metric-value">4</div>
+                    <div class="metric-subtext">Across North, South, East & West Zones</div>
+                </div>
+            </div>
+
+            <!-- Filter & Search Toolbar -->
+            <div class="inventory-toolbar">
+                <div class="toolbar-filters">
+                    <div class="toolbar-group">
+                        <label class="form-label" for="filterWarehouse">Warehouse Facility</label>
+                        <select id="filterWarehouse" class="form-select">
+                            <option value="all">All Warehouses (All Zones)</option>
+                            <option value="1">North Central Hub (North Zone)</option>
+                            <option value="2">South River Logistics (South Zone)</option>
+                            <option value="3">East Valley Depot (East Zone)</option>
+                            <option value="4">West Coast Fulfillment (West Zone)</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group">
+                        <label class="form-label" for="filterSeverity">Alert Severity</label>
+                        <select id="filterSeverity" class="form-select">
+                            <option value="all">All Severity Levels</option>
+                            <option value="Critical">Critical Only (&le; 35% threshold)</option>
+                            <option value="Low Stock">Low Stock Warning</option>
+                            <option value="Out of Stock">Out of Stock</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group" style="flex: 1.5;">
+                        <label class="form-label" for="searchInventoryItem">Search Catalog Item / SKU</label>
+                        <input type="text" id="searchInventoryItem" class="form-input" placeholder="Search by name, SKU (e.g. BOX, WRAP)...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW A: Low Stock Alert Cards Feed -->
+            <div id="alertsFeedView">
+                <div id="lowStockCardsContainer" class="alerts-grid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- VIEW B: Full Stock Matrix Table View -->
+            <div id="stockMatrixView" class="hidden">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span>📊</span> Complete Item–Warehouse Stock Matrix
+                        </h3>
+                        <span class="metric-badge" style="background: rgba(255,255,255,0.06); color: var(--text-secondary);">Real-Time DB State</span>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Warehouse & Zone</th>
+                                        <th>Item Name & SKU</th>
+                                        <th>Current Stock</th>
+                                        <th>Safety Threshold</th>
+                                        <th>Health Status</th>
+                                        <th style="text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stockMatrixTableBody">
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- MODALS -->
+    <!-- ===================================================================== -->
+
+    <!-- Star Rating & Review Modal -->
+    <div id="reviewModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Delivery Feedback: <span id="reviewOrderTitle">Order #1</span></h3>
+                <button id="closeReviewModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Rate Your Experience</label>
+                    <div class="star-rating-input" id="starRatingInput">
+                        <span class="star-item active" data-value="1">★</span>
+                        <span class="star-item active" data-value="2">★</span>
+                        <span class="star-item active" data-value="3">★</span>
+                        <span class="star-item active" data-value="4">★</span>
+                        <span class="star-item active" data-value="5">★</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="reviewComment">Review Comments</label>
+                    <textarea id="reviewComment" class="form-textarea" rows="3" placeholder="Tell us about the delivery speed, packaging condition, or driver professionalism..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitReviewBtn" class="btn btn-primary">Submit Review</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Return Request Modal -->
+    <div id="returnModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Initiate Return: <span id="returnOrderTitle">Order #1</span></h3>
+                <button id="closeReturnModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="returnReason">Return Reason</label>
+                    <select id="returnReason" class="form-select">
+                        <option value="Damaged during transit">Damaged during transit</option>
+                        <option value="Incorrect item received">Incorrect item received</option>
+                        <option value="Defective / unusable">Defective / unusable</option>
+                        <option value="No longer needed">No longer needed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="returnAmount">Estimated Refund Amount ($)</label>
+                    <input type="number" id="returnAmount" class="form-input" value="25.00" step="0.50" min="1.00">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitReturnBtn" class="btn btn-danger">Confirm Return Request</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Place New Order Modal -->
+    <div id="newOrderModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Place New Delivery Order</h3>
+                <button id="closeNewOrderModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="orderShippingType">Shipping Priority</label>
+                    <select id="orderShippingType" class="form-select">
+                        <option value="Standard">Standard Shipping</option>
+                        <option value="Express">Express Shipping (Priority Dispatch)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="orderZip">Delivery Zip / Zone Code</label>
+                    <input type="text" id="orderZip" class="form-input" value="10001" placeholder="e.g. 10001" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="orderAddress">Delivery Address</label>
+                    <input type="text" id="orderAddress" class="form-input" placeholder="Full street address..." required>
+                </div>
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                        <label class="form-label" style="margin-bottom: 0;">Order Items</label>
+                        <button type="button" id="addItemBtn" class="btn btn-outline btn-sm">+ Add Item</button>
+                    </div>
+                    <div id="orderItemsContainer">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitOrderBtn" class="btn btn-primary">Submit Order</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Trip Modal (Driver Earnings Module) -->
+    <div id="logTripModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Log Completed Driver Trip</h3>
+                <button id="closeLogTripModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="logTripDriverSelect">Assigned Driver</label>
+                    <select id="logTripDriverSelect" class="form-select">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="logTripStartTime">Trip Start Timestamp</label>
+                    <input type="datetime-local" id="logTripStartTime" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="logTripEndTime">Trip End Timestamp</label>
+                    <input type="datetime-local" id="logTripEndTime" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="logTripDistance">Total Distance (Miles)</label>
+                    <input type="number" id="logTripDistance" class="form-input" placeholder="e.g. 35.50" step="0.10" min="0.10" required>
+                </div>
+                <div class="rate-preview-box">
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Trip Payout Preview:</div>
+                    <div id="logTripPayoutPreview" style="font-size: 1.1rem; font-weight: 700; color: var(--accent-success); margin-top: 0.2rem;">
+                        $25.00 Base + $0.00 Mileage = $25.00
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitLogTripBtn" class="btn btn-primary">Save & Log Trip</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Issue Paycheck Confirmation Modal -->
+    <div id="issuePaycheckModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Record Weekly Paycheck</h3>
+                <button id="closeIssuePaycheckModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                    Confirming and recording weekly compensation into the <code style="color: #60a5fa;">Paycheck</code> table for:
+                </p>
+                <div class="order-details-grid">
+                    <div>
+                        <div class="detail-label">Driver</div>
+                        <div id="confirmPaycheckDriver" class="detail-val">David Miller</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Week Range</div>
+                        <div id="confirmPaycheckRange" class="detail-val">2026-08-03 to 2026-08-09</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Trips & Mileage</div>
+                        <div id="confirmPaycheckTrips" class="detail-val">2 Trips (62.7 mi)</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Calculated Amount</div>
+                        <div id="confirmPaycheckAmount" class="detail-val" style="color: var(--accent-success); font-size: 1.1rem;">$78.22</div>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label class="form-label" for="confirmPaycheckOverride">Final Amount to Record ($)</label>
+                    <input type="number" id="confirmPaycheckOverride" class="form-input" step="0.01" min="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmIssuePaycheckBtn" class="btn btn-success">Confirm & Save Paycheck</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Restock Item Modal (Low Stock Alert Module) -->
+    <div id="restockModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Replenish Inventory Stock</h3>
+                <button id="closeRestockModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="order-details-grid" style="margin-bottom: 1.25rem;">
+                    <div>
+                        <div class="detail-label">Item</div>
+                        <div id="restockItemName" class="detail-val">Thermal Bubble Wrap</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Warehouse</div>
+                        <div id="restockWarehouseName" class="detail-val">North Central Hub</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Current Stock</div>
+                        <div id="restockCurrentStock" class="detail-val" style="color: var(--accent-danger);">8 units</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Safety Threshold</div>
+                        <div id="restockSafetyThresh" class="detail-val">20 units</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="restockQuantity">Units to Add to Stock</label>
+                    <input type="number" id="restockQuantity" class="form-input" value="25" min="1" step="1" required>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <button type="button" class="btn btn-outline btn-sm quick-add-btn" data-qty="10">+10 units</button>
+                    <button type="button" class="btn btn-outline btn-sm quick-add-btn" data-qty="25">+25 units</button>
+                    <button type="button" class="btn btn-outline btn-sm quick-add-btn" data-qty="50">+50 units</button>
+                    <button type="button" class="btn btn-outline btn-sm quick-add-btn" data-qty="100">+100 units</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitRestockBtn" class="btn btn-success">Confirm Restock</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Safety Threshold Adjustment Modal -->
+    <div id="thresholdModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Configure Item Safety Threshold</h3>
+                <button id="closeThresholdModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Item Catalog Name & SKU</label>
+                    <div id="thresholdItemName" style="font-weight: 700; color: var(--text-primary); margin-bottom: 0.5rem;">
+                        Heavy Duty Shipping Box (L)
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="newSafetyThreshold">New Safety Threshold (Minimum Safe Units)</label>
+                    <input type="number" id="newSafetyThreshold" class="form-input" min="1" step="1" required>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
+                        If stock in any warehouse drops below this number, a Low Stock Alert will be triggered.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitThresholdBtn" class="btn btn-primary">Update Threshold</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>

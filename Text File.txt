@@ -1,0 +1,83 @@
+  ### 1. Architecture & File Structure
+
+    logiroute/
+    ├── logiroute.sql                  # Database schema DDL & seed data
+    ├── db.js                          # MySQL connection pool configuration
+    ├── .env                           # Environment configuration
+    ├── package.json                   # Backend dependencies & npm scripts
+    ├── server.js                      # Express server entry point & static server
+    ├── routes/
+    │   ├── auth.js                    # Login, Signup, Session profile, Demo switcher
+    │   ├── customer.js                # Customer Dashboard, Orders, Ratings, Returns
+    │   ├── items.js                   # Catalog items endpoint
+    │   ├── drivers.js                 # Driver Earnings, Trips, Weekly Paychecks
+    │   └── inventory.js               # Low Stock Alerts, Stock Matrix, Restocking
+    └── public/
+        ├── index.html                 # Modern Single-Page Application (SPA)
+        ├── css/
+        │   └── styles.css             # Tailored dark logistics design system
+        └── js/
+            ├── api.js                 # Frontend API client service
+            └── app.js                 # UI controller & interactive state management
+  ──────
+  ### 2. Implemented Features
+
+  #### A. Authentication Module (Login / Sign Up)
+
+  • User Registration (Sign Up): Creates a new customer account in the Customer table (name,
+  phone_number, address, store_credit_balance).
+  • Customer Sign In (Login): Authenticates customers via phone number or name and returns a
+  JWT session token.
+  • One-Click Demo Account Switcher: Allows quick instant switching between pre-seeded
+  customers (e.g. Alice Johnson, Bob Martinez, Charlie Davis, Diana Prince, Evan Wright, Fiona
+  Gallagher) for fast evaluation.
+
+  #### B. Customer Dashboard (Features.md - Teammate 1, Feature 3)
+
+  • Store Credit Balance Card: Displays live store credit (store_credit_balance) automatically
+  updated through returns.
+  • Real-Time Order Tracking & History: Queries Orders ↔ Drivers ↔ Order_Items ↔ Items,
+  displaying status badges, priority tags, assigned driver rating, and item breakdown.
+  • Star Rating & Feedback Submissions: 1–5 star rating picker and review submission.
+  • Return & Refund Tracking: Tracks return lifecycle and refund amounts.
+  • Place New Order: Interactive modal with catalog items selection.
+
+  #### C. Driver Earnings & Weekly Payroll (Features.md - Teammate 2, Feature 2)
+
+  • Tables: Trips, Paycheck, Drivers
+  • Weekly Paycheck Calculation: 
+    Weekly Earnings = (Completed Trips × base_rate) + (Total Distance Miles × per_km_bonus)
+  • Dynamic Driver Rates: Base rate per trip ($25.00) + variable mileage bonus ($0.45/mile).
+  • Live Calculation Simulator: Select any weekly date range with presets (Past 7 Days, This Week, All Time), step-by-step breakdown of base subtotal and mileage bonus subtotal.
+  • Generate & Record Paycheck: Computes and inserts weekly compensation into the Paycheck table.
+  • Log Completed Delivery Trips: Interactive modal to record delivery trips with timestamps and distance, dynamically updating trip earnings.
+  • Historical Trips & Paychecks Logs: Complete tables displaying completed trips with calculated payout and historical issued paychecks.
+  • Fleet Earnings KPI Dashboard: Active drivers, total trips, mileage logged, and lifetime compensation.
+
+  #### D. Low Stock Alert & Inventory Monitor (Features.md - Teammate 3, Feature 2)
+
+  • Tables: Warehouse_Stocks, Items, Warehouses
+  • Low Stock Query:
+    Query Warehouse_Stocks where stock_quantity < safety_threshold.
+  • Shortage Deficit Calculation: (safety_threshold - stock_quantity) units required.
+  • Severity Classification:
+    • Critical / Out of Stock: Stock <= 35% of safety threshold or 0 units.
+    • Low Stock: Stock below safety threshold.
+  • Interactive Alerts Feed: Visual cards with item title, SKU, warehouse location, stock progress bar, deficit metric, and severity tags.
+  • One-Click Restock: Modal with quick-add buttons (+10, +25, +50, +100) that immediately updates Warehouse_Stocks and clears/reduces alerts in real-time.
+  • Adjust Safety Thresholds: Update item safety thresholds in the Items table.
+  • Full Stock Matrix: Complete distribution grid of all items across all 4 warehouses with search and warehouse/severity filters.
+  • Inventory Health KPIs: Total low stock alerts, critical shortages, total deficit units, and warehouses monitored.
+  ──────
+  ### 3. How to Run & Test
+
+  1. Start the server:
+    npm start
+
+  2. Access the application:
+  Open http://localhost:3000 in your browser.
+
+  3. Navigate between modules using the top header navigation pills:
+      • "👤 Customer Portal": Customer sign in, demo switcher, order history, reviews, returns.
+      • "🚚 Driver Earnings": Select fleet drivers, calculate weekly earnings with the formula, issue paychecks, and log completed trips.
+      • "⚠️ Low Stock Alerts": Monitor warehouse shortages below safety threshold, filter by warehouse/severity, restock inventory, and adjust thresholds.
