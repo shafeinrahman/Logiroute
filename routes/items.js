@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { inMemoryItems } = require('./customer');
+const { items } = require('./dataStore');
 
 // GET /api/items - Catalog items list
 router.get('/', async (req, res) => {
@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
         );
         return res.json({ success: true, items: rows });
     } catch (err) {
-        return res.json({ success: true, items: inMemoryItems });
+        return res.json({ success: true, items });
     }
 });
 

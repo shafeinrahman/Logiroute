@@ -11,6 +11,33 @@ services:
     volumes:
       - ./logiroute.sql:/docker-entrypoint-initdb.d/init.sql:ro
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: logiroute_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: "123456"
+      DB_NAME: LogiRoute
+      JWT_SECRET: logiroute_secret_jwt_2026
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: npm start
 
 volumes:
   mysql_data:
+

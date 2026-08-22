@@ -1,31 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-
-// In-memory fallback datasets for resilient testing/offline demonstration
-let inMemoryDrivers = [
-    { driver_id: 1, full_name: 'David Miller', rating: 4.85, per_km_bonus: 0.45, base_rate: 25.00, status_flag: 'Available' },
-    { driver_id: 2, full_name: 'Sarah Jenkins', rating: 4.90, per_km_bonus: 0.50, base_rate: 28.00, status_flag: 'On Trip' },
-    { driver_id: 3, full_name: 'Michael Scott', rating: 3.20, per_km_bonus: 0.40, base_rate: 22.00, status_flag: 'Under Review' },
-    { driver_id: 4, full_name: 'Emily Watson', rating: 4.75, per_km_bonus: 0.45, base_rate: 25.00, status_flag: 'Available' },
-    { driver_id: 5, full_name: 'James Wilson', rating: 4.60, per_km_bonus: 0.45, base_rate: 25.00, status_flag: 'Available' }
-];
-
-let inMemoryTrips = [
-    { trip_id: 1, start_time: '2026-08-10 08:30:00', end_time: '2026-08-10 11:45:00', distance_miles: 34.50, driver_id: 1 },
-    { trip_id: 2, start_time: '2026-08-11 09:00:00', end_time: '2026-08-11 12:15:00', distance_miles: 28.20, driver_id: 1 },
-    { trip_id: 3, start_time: '2026-08-12 08:00:00', end_time: '2026-08-12 11:30:00', distance_miles: 42.00, driver_id: 2 },
-    { trip_id: 4, start_time: '2026-08-13 13:00:00', end_time: '2026-08-13 16:30:00', distance_miles: 31.80, driver_id: 2 },
-    { trip_id: 5, start_time: '2026-08-14 10:00:00', end_time: '2026-08-14 14:00:00', distance_miles: 19.50, driver_id: 3 },
-    { trip_id: 6, start_time: '2026-08-15 08:15:00', end_time: '2026-08-15 11:00:00', distance_miles: 25.40, driver_id: 4 },
-    { trip_id: 7, start_time: '2026-08-15 13:30:00', end_time: '2026-08-15 17:00:00', distance_miles: 38.00, driver_id: 5 }
-];
-
-let inMemoryPaychecks = [
-    { paycheck_id: 1, week_start: '2026-08-03', week_end: '2026-08-09', total_amount: 245.50, driver_id: 1 },
-    { paycheck_id: 2, week_start: '2026-08-03', week_end: '2026-08-09', total_amount: 285.00, driver_id: 2 },
-    { paycheck_id: 3, week_start: '2026-08-03', week_end: '2026-08-09', total_amount: 180.00, driver_id: 3 }
-];
+const { drivers, trips, paychecks, warehouses, orders } = require('./dataStore');
 
 // Helper: Calculate trip earning
 function calculateTripPay(baseRate, perKmBonus, distanceMiles) {
@@ -36,7 +12,7 @@ function calculateTripPay(baseRate, perKmBonus, distanceMiles) {
 }
 
 // ============================================================================
-// 1. GET /api/drivers - List all drivers with calculated stats
+// 1. GET /api/drivers - List all drivers with calculated stats & zone
 // ============================================================================
 router.get('/', async (req, res) => {
     try {
@@ -48,30 +24,32 @@ router.get('/', async (req, res) => {
                 d.per_km_bonus, 
                 d.base_rate, 
                 d.status_flag,
+                d.location_zone,
                 COUNT(t.trip_id) AS total_trips,
                 COALESCE(SUM(t.distance_miles), 0) AS total_distance_miles,
                 COALESCE(SUM(d.base_rate + (d.per_km_bonus * t.distance_miles)), 0) AS calculated_lifetime_earnings,
                 (SELECT COUNT(*) FROM Paycheck p WHERE p.driver_id = d.driver_id) AS paychecks_issued_count,
-                (SELECT COALESCE(SUM(p.total_amount), 0) FROM Paycheck p WHERE p.driver_id = d.driver_id) AS total_paid_amount
+                (SELECT COALESCE(SUM(p.total_amount), 0) FROM Paycheck p WHERE p.driver_id = d.driver_id) AS total_paid_amount,
+                (SELECT COUNT(*) FROM Orders o WHERE o.driver_id = d.driver_id AND o.order_status IN ('Out for Delivery', 'Dispatched')) AS active_deliveries
             FROM Drivers d
             LEFT JOIN Trips t ON d.driver_id = t.driver_id
-            GROUP BY d.driver_id, d.full_name, d.rating, d.per_km_bonus, d.base_rate, d.status_flag
+            GROUP BY d.driver_id, d.full_name, d.rating, d.per_km_bonus, d.base_rate, d.status_flag, d.location_zone
             ORDER BY d.driver_id ASC
         `;
         const [rows] = await pool.promise().query(query);
         return res.json({ success: true, drivers: rows });
     } catch (err) {
         console.error('Drivers query fallback:', err.message);
-        // In-memory fallback calculation
-        const driversWithStats = inMemoryDrivers.map(d => {
-            const driverTrips = inMemoryTrips.filter(t => t.driver_id === d.driver_id);
+        const driversWithStats = drivers.map(d => {
+            const driverTrips = trips.filter(t => t.driver_id === d.driver_id);
             const totalTrips = driverTrips.length;
             const totalDistance = driverTrips.reduce((sum, t) => sum + (parseFloat(t.distance_miles) || 0), 0);
             const lifetimeEarnings = driverTrips.reduce((sum, t) => sum + calculateTripPay(d.base_rate, d.per_km_bonus, t.distance_miles), 0);
             
-            const driverPaychecks = inMemoryPaychecks.filter(p => p.driver_id === d.driver_id);
+            const driverPaychecks = paychecks.filter(p => p.driver_id === d.driver_id);
             const paychecksCount = driverPaychecks.length;
             const totalPaid = driverPaychecks.reduce((sum, p) => sum + (parseFloat(p.total_amount) || 0), 0);
+            const activeDeliveries = orders.filter(o => o.driver_id === d.driver_id && ['Out for Delivery', 'Dispatched'].includes(o.order_status)).length;
 
             return {
                 ...d,
@@ -79,7 +57,8 @@ router.get('/', async (req, res) => {
                 total_distance_miles: totalDistance.toFixed(2),
                 calculated_lifetime_earnings: lifetimeEarnings.toFixed(2),
                 paychecks_issued_count: paychecksCount,
-                total_paid_amount: totalPaid.toFixed(2)
+                total_paid_amount: totalPaid.toFixed(2),
+                active_deliveries: activeDeliveries
             };
         });
 
@@ -96,7 +75,6 @@ router.get('/kpis', async (req, res) => {
         const [tripRows] = await pool.promise().query('SELECT COUNT(*) as total_trips, SUM(distance_miles) as total_distance FROM Trips');
         const [payRows] = await pool.promise().query('SELECT COUNT(*) as paychecks_count, SUM(total_amount) as total_payout FROM Paycheck');
 
-        // Sum lifetime calculated earnings from trips + rates
         const [calcRows] = await pool.promise().query(`
             SELECT COALESCE(SUM(d.base_rate + (d.per_km_bonus * t.distance_miles)), 0) as total_earnings_generated
             FROM Trips t
@@ -117,15 +95,15 @@ router.get('/kpis', async (req, res) => {
         });
     } catch (err) {
         console.error('Driver KPIs fallback:', err.message);
-        const totalDrivers = inMemoryDrivers.length;
-        const avgRating = (inMemoryDrivers.reduce((sum, d) => sum + d.rating, 0) / (totalDrivers || 1)).toFixed(2);
-        const totalTrips = inMemoryTrips.length;
-        const totalDistanceMiles = inMemoryTrips.reduce((sum, t) => sum + t.distance_miles, 0).toFixed(1);
-        const totalPaychecksIssued = inMemoryPaychecks.length;
-        const totalPayoutRecorded = inMemoryPaychecks.reduce((sum, p) => sum + p.total_amount, 0).toFixed(2);
+        const totalDrivers = drivers.length;
+        const avgRating = (drivers.reduce((sum, d) => sum + d.rating, 0) / (totalDrivers || 1)).toFixed(2);
+        const totalTrips = trips.length;
+        const totalDistanceMiles = trips.reduce((sum, t) => sum + t.distance_miles, 0).toFixed(1);
+        const totalPaychecksIssued = paychecks.length;
+        const totalPayoutRecorded = paychecks.reduce((sum, p) => sum + p.total_amount, 0).toFixed(2);
         
-        const totalEarningsGenerated = inMemoryTrips.reduce((sum, t) => {
-            const driver = inMemoryDrivers.find(d => d.driver_id === t.driver_id);
+        const totalEarningsGenerated = trips.reduce((sum, t) => {
+            const driver = drivers.find(d => d.driver_id === t.driver_id);
             if (!driver) return sum;
             return sum + calculateTripPay(driver.base_rate, driver.per_km_bonus, t.distance_miles);
         }, 0).toFixed(2);
@@ -146,13 +124,278 @@ router.get('/kpis', async (req, res) => {
 });
 
 // ============================================================================
-// 3. GET /api/drivers/:driverId - Single Driver Profile & Rate Config
+// 3. GET /api/drivers/coverage-map
+// FEATURE: Driver–Warehouse Coverage Map (Features.md - Teammate 2, Feature 1)
+// Join drivers with warehouses on location_zone to show which drivers can realistically service which warehouse.
+// Tables: drivers, warehouses
+// ============================================================================
+router.get('/coverage-map', async (req, res) => {
+    const { zone } = req.query;
+
+    try {
+        // Direct SQL join between Drivers and Warehouses on location_zone
+        let joinSql = `
+            SELECT 
+                w.warehouse_id,
+                w.name AS warehouse_name,
+                w.location_zone,
+                d.driver_id,
+                d.full_name AS driver_name,
+                d.rating AS driver_rating,
+                d.status_flag AS driver_status,
+                d.base_rate,
+                d.per_km_bonus,
+                (SELECT COUNT(*) FROM Orders o WHERE o.driver_id = d.driver_id AND o.order_status IN ('Out for Delivery', 'Dispatched')) AS active_deliveries,
+                (SELECT COUNT(*) FROM Orders o WHERE o.order_status = 'Pending' AND (o.address LIKE CONCAT('%', w.location_zone, '%') OR o.zip_code = CASE WHEN w.location_zone = 'North Zone' THEN '10001' WHEN w.location_zone = 'South Zone' THEN '10002' WHEN w.location_zone = 'East Zone' THEN '10003' WHEN w.location_zone = 'West Zone' THEN '10004' ELSE '' END)) AS pending_orders_in_zone
+            FROM Warehouses w
+            JOIN Drivers d ON w.location_zone = d.location_zone
+        `;
+
+        const params = [];
+        if (zone && zone !== 'all') {
+            joinSql += ' WHERE w.location_zone = ?';
+            params.push(zone);
+        }
+        joinSql += ' ORDER BY w.warehouse_id ASC, d.rating DESC';
+
+        const [joinRows] = await pool.promise().query(joinSql, params);
+
+        // Warehouse summary with driver counts
+        const [warehouseRows] = await pool.promise().query(`
+            SELECT 
+                w.warehouse_id,
+                w.name AS warehouse_name,
+                w.location_zone,
+                COUNT(d.driver_id) AS total_assigned_drivers,
+                SUM(CASE WHEN d.status_flag = 'Available' THEN 1 ELSE 0 END) AS available_drivers,
+                SUM(CASE WHEN d.status_flag IN ('Busy', 'On Trip') THEN 1 ELSE 0 END) AS busy_drivers,
+                SUM(CASE WHEN d.status_flag = 'Under Review' THEN 1 ELSE 0 END) AS under_review_drivers,
+                COALESCE(AVG(d.rating), 0) AS avg_driver_rating
+            FROM Warehouses w
+            LEFT JOIN Drivers d ON w.location_zone = d.location_zone
+            GROUP BY w.warehouse_id, w.name, w.location_zone
+            ORDER BY w.warehouse_id ASC
+        `);
+
+        // All drivers with their mapped warehouse (including unmapped ones)
+        const [allDriversRows] = await pool.promise().query(`
+            SELECT 
+                d.driver_id,
+                d.full_name,
+                d.rating,
+                d.status_flag,
+                d.base_rate,
+                d.per_km_bonus,
+                d.location_zone,
+                w.warehouse_id,
+                w.name AS warehouse_name
+            FROM Drivers d
+            LEFT JOIN Warehouses w ON d.location_zone = w.location_zone
+            ORDER BY d.driver_id ASC
+        `);
+
+        // Group join results by warehouse
+        const coverageByWarehouse = warehouseRows.map(w => {
+            const matchedDrivers = joinRows.filter(r => r.warehouse_id === w.warehouse_id);
+            return {
+                ...w,
+                drivers: matchedDrivers
+            };
+        });
+
+        return res.json({
+            success: true,
+            totalMappedPairs: joinRows.length,
+            coverage: coverageByWarehouse,
+            detailedRows: joinRows,
+            allDrivers: allDriversRows,
+            warehouses: warehouseRows
+        });
+    } catch (err) {
+        console.error('Coverage Map DB fallback:', err.message);
+
+        // In-memory SQL JOIN emulation on location_zone
+        let matchedPairs = [];
+        warehouses.forEach(w => {
+            const zoneDrivers = drivers.filter(d => d.location_zone === w.location_zone);
+            zoneDrivers.forEach(d => {
+                const activeDeliveries = orders.filter(o => o.driver_id === d.driver_id && ['Out for Delivery', 'Dispatched'].includes(o.order_status)).length;
+                const pendingOrdersInZone = orders.filter(o => o.order_status === 'Pending' && o.address.includes(w.location_zone)).length;
+                matchedPairs.push({
+                    warehouse_id: w.warehouse_id,
+                    warehouse_name: w.name,
+                    location_zone: w.location_zone,
+                    driver_id: d.driver_id,
+                    driver_name: d.full_name,
+                    driver_rating: d.rating,
+                    driver_status: d.status_flag,
+                    base_rate: d.base_rate,
+                    per_km_bonus: d.per_km_bonus,
+                    active_deliveries: activeDeliveries,
+                    pending_orders_in_zone: pendingOrdersInZone
+                });
+            });
+        });
+
+        if (zone && zone !== 'all') {
+            matchedPairs = matchedPairs.filter(p => p.location_zone.toLowerCase() === zone.toLowerCase());
+        }
+
+        const coverageByWarehouse = warehouses.map(w => {
+            const matchedDrivers = matchedPairs.filter(p => p.warehouse_id === w.warehouse_id);
+            const availCount = matchedDrivers.filter(d => d.driver_status === 'Available').length;
+            const busyCount = matchedDrivers.filter(d => ['Busy', 'On Trip'].includes(d.driver_status)).length;
+            const reviewCount = matchedDrivers.filter(d => d.driver_status === 'Under Review').length;
+            const avgRating = matchedDrivers.length ? (matchedDrivers.reduce((sum, d) => sum + d.driver_rating, 0) / matchedDrivers.length).toFixed(2) : '0.00';
+
+            return {
+                warehouse_id: w.warehouse_id,
+                warehouse_name: w.name,
+                location_zone: w.location_zone,
+                total_assigned_drivers: matchedDrivers.length,
+                available_drivers: availCount,
+                busy_drivers: busyCount,
+                under_review_drivers: reviewCount,
+                avg_driver_rating: avgRating,
+                drivers: matchedDrivers
+            };
+        });
+
+        const allDriversWithWarehouse = drivers.map(d => {
+            const matchWarehouse = warehouses.find(w => w.location_zone === d.location_zone);
+            return {
+                ...d,
+                warehouse_id: matchWarehouse ? matchWarehouse.warehouse_id : null,
+                warehouse_name: matchWarehouse ? matchWarehouse.name : 'Unassigned / Cross-Zone'
+            };
+        });
+
+        return res.json({
+            success: true,
+            totalMappedPairs: matchedPairs.length,
+            coverage: coverageByWarehouse,
+            detailedRows: matchedPairs,
+            allDrivers: allDriversWithWarehouse,
+            warehouses: coverageByWarehouse
+        });
+    }
+});
+
+// ============================================================================
+// 4. GET /api/drivers/coverage-kpis
+// Summary KPIs for the Coverage Map
+// ============================================================================
+router.get('/coverage-kpis', async (req, res) => {
+    try {
+        const [wRows] = await pool.promise().query('SELECT COUNT(*) AS total_warehouses, COUNT(DISTINCT location_zone) AS active_zones FROM Warehouses');
+        const [dRows] = await pool.promise().query(`
+            SELECT 
+                COUNT(*) AS total_drivers,
+                SUM(CASE WHEN status_flag = 'Available' THEN 1 ELSE 0 END) AS available_drivers,
+                SUM(CASE WHEN status_flag IN ('Busy', 'On Trip') THEN 1 ELSE 0 END) AS busy_drivers,
+                SUM(CASE WHEN location_zone IS NOT NULL AND location_zone IN (SELECT location_zone FROM Warehouses) THEN 1 ELSE 0 END) AS covered_drivers
+            FROM Drivers
+        `);
+
+        const totalWarehouses = wRows[0].total_warehouses || 0;
+        const totalDrivers = dRows[0].total_drivers || 0;
+        const coveredDrivers = dRows[0].covered_drivers || 0;
+        const coverageRatio = totalWarehouses > 0 ? (coveredDrivers / totalWarehouses).toFixed(1) : '0.0';
+
+        return res.json({
+            success: true,
+            kpis: {
+                totalWarehouses,
+                activeZones: wRows[0].active_zones || 0,
+                totalDrivers,
+                coveredDrivers,
+                availableDrivers: dRows[0].available_drivers || 0,
+                busyDrivers: dRows[0].busy_drivers || 0,
+                driverWarehouseRatio: `${coverageRatio} drivers / hub`,
+                fleetReadiness: dRows[0].available_drivers > 0 ? 'Ready for Dispatch' : 'All Drivers Busy'
+            }
+        });
+    } catch (err) {
+        const totalWarehouses = warehouses.length;
+        const totalDrivers = drivers.length;
+        const coveredDrivers = drivers.filter(d => warehouses.some(w => w.location_zone === d.location_zone)).length;
+        const availableDrivers = drivers.filter(d => d.status_flag === 'Available').length;
+        const busyDrivers = drivers.filter(d => ['Busy', 'On Trip'].includes(d.status_flag)).length;
+        const coverageRatio = totalWarehouses > 0 ? (coveredDrivers / totalWarehouses).toFixed(1) : '0.0';
+
+        return res.json({
+            success: true,
+            kpis: {
+                totalWarehouses,
+                activeZones: new Set(warehouses.map(w => w.location_zone)).size,
+                totalDrivers,
+                coveredDrivers,
+                availableDrivers,
+                busyDrivers,
+                driverWarehouseRatio: `${coverageRatio} drivers / hub`,
+                fleetReadiness: availableDrivers > 0 ? 'Ready for Dispatch' : 'All Drivers Busy'
+            }
+        });
+    }
+});
+
+// ============================================================================
+// 5. PUT /api/drivers/:driverId/zone - Update Driver Location Zone
+// ============================================================================
+router.put('/:driverId/zone', async (req, res) => {
+    const driverId = parseInt(req.params.driverId, 10);
+    const { location_zone } = req.body;
+
+    if (!location_zone) {
+        return res.status(400).json({ error: 'Please provide location_zone.' });
+    }
+
+    try {
+        const [result] = await pool.promise().query(
+            'UPDATE Drivers SET location_zone = ? WHERE driver_id = ?',
+            [location_zone, driverId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Driver not found.' });
+        }
+
+        const [driverRows] = await pool.promise().query(
+            'SELECT d.*, w.name as warehouse_name FROM Drivers d LEFT JOIN Warehouses w ON d.location_zone = w.location_zone WHERE d.driver_id = ?',
+            [driverId]
+        );
+
+        return res.json({
+            success: true,
+            message: `Driver #${driverId} reassigned to ${location_zone} (Warehouse: ${driverRows[0]?.warehouse_name || 'Cross-Zone'}).`,
+            driver: driverRows[0]
+        });
+    } catch (err) {
+        const driver = drivers.find(d => d.driver_id === driverId);
+        if (!driver) return res.status(404).json({ error: 'Driver not found.' });
+
+        driver.location_zone = location_zone;
+        const matchWarehouse = warehouses.find(w => w.location_zone === location_zone);
+
+        return res.json({
+            success: true,
+            message: `Driver #${driverId} (${driver.full_name}) reassigned to ${location_zone} (Warehouse: ${matchWarehouse ? matchWarehouse.name : 'Cross-Zone'}).`,
+            driver: {
+                ...driver,
+                warehouse_name: matchWarehouse ? matchWarehouse.name : 'Cross-Zone'
+            }
+        });
+    }
+});
+
+// ============================================================================
+// 6. GET /api/drivers/:driverId - Single Driver Profile & Rate Config
 // ============================================================================
 router.get('/:driverId', async (req, res) => {
     const driverId = parseInt(req.params.driverId, 10);
     try {
         const [rows] = await pool.promise().query(
-            'SELECT driver_id, full_name, rating, per_km_bonus, base_rate, status_flag FROM Drivers WHERE driver_id = ?',
+            'SELECT driver_id, full_name, rating, per_km_bonus, base_rate, status_flag, location_zone FROM Drivers WHERE driver_id = ?',
             [driverId]
         );
         if (rows.length === 0) {
@@ -160,14 +403,14 @@ router.get('/:driverId', async (req, res) => {
         }
         return res.json({ success: true, driver: rows[0] });
     } catch (err) {
-        const driver = inMemoryDrivers.find(d => d.driver_id === driverId);
+        const driver = drivers.find(d => d.driver_id === driverId);
         if (!driver) return res.status(404).json({ error: 'Driver not found.' });
         return res.json({ success: true, driver });
     }
 });
 
 // ============================================================================
-// 4. GET /api/drivers/:driverId/trips - Completed Trips for a Driver
+// 7. GET /api/drivers/:driverId/trips - Completed Trips for a Driver
 // ============================================================================
 router.get('/:driverId/trips', async (req, res) => {
     const driverId = parseInt(req.params.driverId, 10);
@@ -191,10 +434,10 @@ router.get('/:driverId/trips', async (req, res) => {
         const [rows] = await pool.promise().query(query, [driverId]);
         return res.json({ success: true, trips: rows });
     } catch (err) {
-        const driver = inMemoryDrivers.find(d => d.driver_id === driverId);
+        const driver = drivers.find(d => d.driver_id === driverId);
         if (!driver) return res.status(404).json({ error: 'Driver not found.' });
 
-        const trips = inMemoryTrips
+        const driverTrips = trips
             .filter(t => t.driver_id === driverId)
             .map(t => ({
                 ...t,
@@ -205,12 +448,12 @@ router.get('/:driverId/trips', async (req, res) => {
             }))
             .sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
 
-        return res.json({ success: true, trips });
+        return res.json({ success: true, trips: driverTrips });
     }
 });
 
 // ============================================================================
-// 5. GET /api/drivers/:driverId/paychecks - Paychecks list for a Driver
+// 8. GET /api/drivers/:driverId/paychecks - Paychecks list for a Driver
 // ============================================================================
 router.get('/:driverId/paychecks', async (req, res) => {
     const driverId = parseInt(req.params.driverId, 10);
@@ -231,8 +474,8 @@ router.get('/:driverId/paychecks', async (req, res) => {
         const [rows] = await pool.promise().query(query, [driverId]);
         return res.json({ success: true, paychecks: rows });
     } catch (err) {
-        const driver = inMemoryDrivers.find(d => d.driver_id === driverId);
-        const paychecks = inMemoryPaychecks
+        const driver = drivers.find(d => d.driver_id === driverId);
+        const driverPaychecks = paychecks
             .filter(p => p.driver_id === driverId)
             .map(p => ({
                 ...p,
@@ -240,12 +483,12 @@ router.get('/:driverId/paychecks', async (req, res) => {
             }))
             .sort((a, b) => new Date(b.week_end) - new Date(a.week_end));
 
-        return res.json({ success: true, paychecks });
+        return res.json({ success: true, paychecks: driverPaychecks });
     }
 });
 
 // ============================================================================
-// 6. GET /api/drivers/:driverId/weekly-calculation
+// 9. GET /api/drivers/:driverId/weekly-calculation
 // FEATURE: Driver Earnings (Features.md - Teammate 2, Feature 2)
 // Weekly paycheck calculation: base_rate per trip plus per_km_bonus × distance_miles,
 // summed from trips into paycheck.
@@ -254,7 +497,6 @@ router.get('/:driverId/weekly-calculation', async (req, res) => {
     const driverId = parseInt(req.params.driverId, 10);
     const { week_start, week_end } = req.query;
 
-    // Default dates to current week or last 7 days if not provided
     let start = week_start;
     let end = week_end;
 
@@ -267,9 +509,8 @@ router.get('/:driverId/weekly-calculation', async (req, res) => {
     }
 
     try {
-        // Fetch Driver compensation rates
         const [driverRows] = await pool.promise().query(
-            'SELECT driver_id, full_name, rating, per_km_bonus, base_rate, status_flag FROM Drivers WHERE driver_id = ?',
+            'SELECT driver_id, full_name, rating, per_km_bonus, base_rate, status_flag, location_zone FROM Drivers WHERE driver_id = ?',
             [driverId]
         );
 
@@ -278,7 +519,6 @@ router.get('/:driverId/weekly-calculation', async (req, res) => {
         }
         const driver = driverRows[0];
 
-        // Fetch Trips in the given date range
         const query = `
             SELECT 
                 t.trip_id,
@@ -294,11 +534,10 @@ router.get('/:driverId/weekly-calculation', async (req, res) => {
               AND DATE(t.start_time) <= ?
             ORDER BY t.start_time ASC
         `;
-        const [trips] = await pool.promise().query(query, [driverId, start, end]);
+        const [tripsList] = await pool.promise().query(query, [driverId, start, end]);
 
-        // Weekly Paycheck Calculation Formula
-        const tripCount = trips.length;
-        const totalDistanceMiles = trips.reduce((sum, t) => sum + parseFloat(t.distance_miles || 0), 0);
+        const tripCount = tripsList.length;
+        const totalDistanceMiles = tripsList.reduce((sum, t) => sum + parseFloat(t.distance_miles || 0), 0);
         const baseRate = parseFloat(driver.base_rate);
         const perKmBonus = parseFloat(driver.per_km_bonus);
         
@@ -306,7 +545,6 @@ router.get('/:driverId/weekly-calculation', async (req, res) => {
         const mileageEarningsTotal = totalDistanceMiles * perKmBonus;
         const totalWeeklyEarnings = baseEarningsTotal + mileageEarningsTotal;
 
-        // Check if paycheck is already recorded for this range
         const [existingPaycheck] = await pool.promise().query(
             'SELECT paycheck_id, total_amount FROM Paycheck WHERE driver_id = ? AND week_start = ? AND week_end = ?',
             [driverId, start, end]
@@ -325,17 +563,17 @@ router.get('/:driverId/weekly-calculation', async (req, res) => {
                 base_earnings_total: parseFloat(baseEarningsTotal.toFixed(2)),
                 mileage_earnings_total: parseFloat(mileageEarningsTotal.toFixed(2)),
                 total_weekly_earnings: parseFloat(totalWeeklyEarnings.toFixed(2)),
-                trips,
+                trips: tripsList,
                 is_already_issued: existingPaycheck.length > 0,
                 existing_paycheck: existingPaycheck[0] || null
             }
         });
     } catch (err) {
         console.error('Weekly calculation fallback:', err.message);
-        const driver = inMemoryDrivers.find(d => d.driver_id === driverId);
+        const driver = drivers.find(d => d.driver_id === driverId);
         if (!driver) return res.status(404).json({ error: 'Driver not found.' });
 
-        const tripsInRange = inMemoryTrips.filter(t => {
+        const tripsInRange = trips.filter(t => {
             if (t.driver_id !== driverId) return false;
             const tripDate = t.start_time.split(' ')[0];
             return tripDate >= start && tripDate <= end;
@@ -353,7 +591,7 @@ router.get('/:driverId/weekly-calculation', async (req, res) => {
         const mileageEarningsTotal = totalDistanceMiles * perKmBonus;
         const totalWeeklyEarnings = baseEarningsTotal + mileageEarningsTotal;
 
-        const existingPaycheck = inMemoryPaychecks.find(
+        const existingPaycheck = paychecks.find(
             p => p.driver_id === driverId && p.week_start === start && p.week_end === end
         );
 
@@ -379,8 +617,7 @@ router.get('/:driverId/weekly-calculation', async (req, res) => {
 });
 
 // ============================================================================
-// 7. POST /api/drivers/:driverId/generate-paycheck
-// Generates and inserts calculated weekly paycheck into the Paycheck table
+// 10. POST /api/drivers/:driverId/generate-paycheck
 // ============================================================================
 router.post('/:driverId/generate-paycheck', async (req, res) => {
     const driverId = parseInt(req.params.driverId, 10);
@@ -391,7 +628,6 @@ router.post('/:driverId/generate-paycheck', async (req, res) => {
     }
 
     try {
-        // Fetch Driver rates
         const [driverRows] = await pool.promise().query(
             'SELECT driver_id, full_name, base_rate, per_km_bonus FROM Drivers WHERE driver_id = ?',
             [driverId]
@@ -406,7 +642,6 @@ router.post('/:driverId/generate-paycheck', async (req, res) => {
         if (override_amount !== undefined && override_amount !== null && !isNaN(override_amount)) {
             finalAmount = parseFloat(override_amount);
         } else {
-            // Compute sum from trips in this week range: SUM(base_rate + per_km_bonus * distance_miles)
             const [tripRows] = await pool.promise().query(
                 `SELECT COUNT(*) as trip_count, COALESCE(SUM(distance_miles), 0) as total_distance
                  FROM Trips 
@@ -420,7 +655,6 @@ router.post('/:driverId/generate-paycheck', async (req, res) => {
             finalAmount = parseFloat(finalAmount.toFixed(2));
         }
 
-        // Insert into Paycheck table
         const [result] = await pool.promise().query(
             'INSERT INTO Paycheck (week_start, week_end, total_amount, driver_id) VALUES (?, ?, ?, ?)',
             [week_start, week_end, finalAmount, driverId]
@@ -440,10 +674,10 @@ router.post('/:driverId/generate-paycheck', async (req, res) => {
         });
     } catch (err) {
         console.error('Paycheck Generation DB Error:', err.message);
-        const driver = inMemoryDrivers.find(d => d.driver_id === driverId);
+        const driver = drivers.find(d => d.driver_id === driverId);
         if (!driver) return res.status(404).json({ error: 'Driver not found.' });
 
-        const tripsInRange = inMemoryTrips.filter(t => {
+        const tripsInRange = trips.filter(t => {
             if (t.driver_id !== driverId) return false;
             const tripDate = t.start_time.split(' ')[0];
             return tripDate >= week_start && tripDate <= week_end;
@@ -454,7 +688,7 @@ router.post('/:driverId/generate-paycheck', async (req, res) => {
         let finalAmount = (count * driver.base_rate) + (dist * driver.per_km_bonus);
         finalAmount = parseFloat(finalAmount.toFixed(2));
 
-        const newPaycheckId = inMemoryPaychecks.length ? Math.max(...inMemoryPaychecks.map(p => p.paycheck_id)) + 1 : 1;
+        const newPaycheckId = paychecks.length ? Math.max(...paychecks.map(p => p.paycheck_id)) + 1 : 1;
         const newPaycheck = {
             paycheck_id: newPaycheckId,
             week_start,
@@ -463,7 +697,7 @@ router.post('/:driverId/generate-paycheck', async (req, res) => {
             driver_id: driverId,
             driver_name: driver.full_name
         };
-        inMemoryPaychecks.push(newPaycheck);
+        paychecks.push(newPaycheck);
 
         return res.status(201).json({
             success: true,
@@ -474,8 +708,7 @@ router.post('/:driverId/generate-paycheck', async (req, res) => {
 });
 
 // ============================================================================
-// 8. POST /api/drivers/:driverId/trips
-// Log a new completed delivery trip for a driver
+// 11. POST /api/drivers/:driverId/trips - Log completed delivery trip
 // ============================================================================
 router.post('/:driverId/trips', async (req, res) => {
     const driverId = parseInt(req.params.driverId, 10);
@@ -496,7 +729,6 @@ router.post('/:driverId/trips', async (req, res) => {
             [start_time, end_time, distance, driverId]
         );
 
-        // Fetch driver info for calculating earning
         const [driverRows] = await pool.promise().query('SELECT base_rate, per_km_bonus, full_name FROM Drivers WHERE driver_id = ?', [driverId]);
         const driver = driverRows[0] || { base_rate: 25.0, per_km_bonus: 0.45, full_name: `Driver #${driverId}` };
         const tripPay = calculateTripPay(driver.base_rate, driver.per_km_bonus, distance);
@@ -515,10 +747,10 @@ router.post('/:driverId/trips', async (req, res) => {
         });
     } catch (err) {
         console.error('Trip Logging DB Error:', err.message);
-        const driver = inMemoryDrivers.find(d => d.driver_id === driverId);
+        const driver = drivers.find(d => d.driver_id === driverId);
         if (!driver) return res.status(404).json({ error: 'Driver not found.' });
 
-        const newTripId = inMemoryTrips.length ? Math.max(...inMemoryTrips.map(t => t.trip_id)) + 1 : 1;
+        const newTripId = trips.length ? Math.max(...trips.map(t => t.trip_id)) + 1 : 1;
         const tripPay = calculateTripPay(driver.base_rate, driver.per_km_bonus, distance);
         const newTrip = {
             trip_id: newTripId,
@@ -529,7 +761,7 @@ router.post('/:driverId/trips', async (req, res) => {
             driver_name: driver.full_name,
             calculated_trip_pay: tripPay
         };
-        inMemoryTrips.push(newTrip);
+        trips.push(newTrip);
 
         return res.status(201).json({
             success: true,
@@ -540,8 +772,5 @@ router.post('/:driverId/trips', async (req, res) => {
 });
 
 module.exports = {
-    router,
-    inMemoryDrivers,
-    inMemoryTrips,
-    inMemoryPaychecks
+    router
 };

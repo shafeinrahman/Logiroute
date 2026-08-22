@@ -20,27 +20,65 @@
                 <div class="brand-icon">LR</div>
                 <div>
                     <h1 class="brand-title">LogiRoute</h1>
-                    <div class="brand-subtitle">Smart Logistics & Route Management</div>
+                    <div class="brand-subtitle">Smart Logistics & Multi-Warehouse Platform</div>
                 </div>
             </div>
 
-            <!-- Global Module Navigation Bar -->
-            <nav class="nav-module-pills">
-                <button id="navCustomerBtn" class="nav-pill active" data-module="customer">
+            <!-- Portal Switcher -->
+            <div class="portal-nav-toggle">
+                <button id="portalCustomerBtn" class="portal-toggle-btn active" data-portal="customer">
                     <span>👤</span> Customer Portal
+                </button>
+                <button id="portalWarehouseBtn" class="portal-toggle-btn" data-portal="warehouse">
+                    <span>🏢</span> Warehouse Portal
+                </button>
+            </div>
+
+            <!-- Warehouse Operations Navigation Bar (Visible for Warehouse Managers) -->
+            <nav id="warehouseNavPills" class="nav-module-pills hidden">
+                <button id="navStockMatrixBtn" class="nav-pill active" data-module="stock-matrix">
+                    <span>📦</span> Stock Matrix
+                </button>
+                <button id="navInventoryBtn" class="nav-pill" data-module="inventory">
+                    <span>⚠️</span> Low Stock Alerts
+                </button>
+                <button id="navGoodsMonitoringBtn" class="nav-pill" data-module="goods-monitoring">
+                    <span>🛡️</span> Goods Monitoring
+                </button>
+                <button id="navDispatchBtn" class="nav-pill" data-module="dispatch">
+                    <span>🚀</span> Order Dispatch
+                </button>
+                <button id="navCoverageBtn" class="nav-pill" data-module="coverage">
+                    <span>🗺️</span> Coverage Map
                 </button>
                 <button id="navDriversBtn" class="nav-pill" data-module="drivers">
                     <span>🚚</span> Driver Earnings
                 </button>
-                <button id="navInventoryBtn" class="nav-pill" data-module="inventory">
-                    <span>⚠️</span> Low Stock Alerts
+                <button id="navReturnsBtn" class="nav-pill" data-module="returns">
+                    <span>↩️</span> Return Management
+                </button>
+                <button id="navMissingSalesBtn" class="nav-pill" data-module="missing-sales">
+                    <span>📉</span> Missing Sales
+                </button>
+                <button id="navNotificationsBtn" class="nav-pill" data-module="notifications">
+                    <span>🔔</span> Notifications
+                </button>
+            </nav>
+
+            <!-- Customer Portal Navigation Bar (Visible for Customers) -->
+            <nav id="customerNavPills" class="nav-module-pills">
+                <button id="navCustomerBtn" class="nav-pill active" data-module="customer">
+                    <span>👤</span> Customer Dashboard & Orders
                 </button>
             </nav>
 
             <div class="header-actions">
                 <div id="userPill" class="user-pill hidden">
                     <div id="userAvatar" class="user-avatar">A</div>
-                    <span id="userName" class="user-name">Alice Johnson</span>
+                    <div>
+                        <span id="userName" class="user-name">Alice Johnson</span>
+                        <div id="userRoleBadge" class="user-role-badge">Customer</div>
+                    </div>
                 </div>
                 <button id="logoutBtn" class="btn btn-outline btn-sm hidden">Sign Out</button>
             </div>
@@ -51,61 +89,95 @@
     <main class="main-content">
 
         <!-- ================================================================= -->
+        <!-- AUTHENTICATION SECTION (Dual Portal Authentication)               -->
+        <!-- ================================================================= -->
+        <section id="authSection" class="auth-container">
+            <div class="auth-portal-header">
+                <div id="authPortalHeading" class="auth-portal-title">👤 Customer Portal Access</div>
+                <div id="authPortalSubtitle" class="auth-portal-desc">Sign in with your customer account to place orders and track returns.</div>
+            </div>
+
+            <!-- Customer Auth Tabs (Sign In vs Register) -->
+            <div id="customerAuthTabs" class="auth-tabs">
+                <button class="auth-tab-btn active" data-tab="login" id="tabLoginBtn">Customer Sign In</button>
+                <button class="auth-tab-btn" data-tab="signup" id="tabSignupBtn">Create Account</button>
+            </div>
+
+            <!-- Customer Login Form -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" for="loginIdentifier">Customer Name or Phone</label>
+                    <input type="text" id="loginIdentifier" class="form-input" placeholder="e.g. Alice Johnson or +1-555-0101" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" id="loginSubmitBtn">
+                    Sign In as Customer
+                </button>
+            </form>
+
+            <!-- Customer Signup Form -->
+            <form id="signupForm" class="hidden">
+                <div class="form-group">
+                    <label class="form-label" for="signupName">Full Name</label>
+                    <input type="text" id="signupName" class="form-input" placeholder="e.g. Eleanor Vance" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="signupPhone">Phone Number</label>
+                    <input type="tel" id="signupPhone" class="form-input" placeholder="+1-555-0199" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="signupAddress">Delivery Address & Zone</label>
+                    <input type="text" id="signupAddress" class="form-input" placeholder="452 Skyline Blvd, North Zone" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="signupCredit">Initial Store Credit ($)</label>
+                    <input type="number" id="signupCredit" class="form-input" value="0.00" step="5.00" min="0">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" id="signupSubmitBtn">
+                    Create Customer Account
+                </button>
+            </form>
+
+            <!-- Customer Demo Switcher -->
+            <div id="customerDemoBox" class="demo-customers-box">
+                <div class="demo-title">Quick Demo Login (Pre-seeded Customers)</div>
+                <div id="demoChipsContainer" class="demo-chips">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Warehouse Manager Login Form (Shown when in Warehouse Portal) -->
+            <form id="warehouseLoginForm" class="hidden">
+                <div class="form-group">
+                    <label class="form-label" for="warehouseUsernameInput">Warehouse ID / Username</label>
+                    <input type="text" id="warehouseUsernameInput" class="form-input" placeholder="Enter Warehouse ID (e.g. 1, 2, 3, or 4)" required>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                        Use warehouse number: <strong>1</strong> (North), <strong>2</strong> (South), <strong>3</strong> (East), or <strong>4</strong> (West).
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="warehousePasswordInput">Warehouse Password</label>
+                    <input type="password" id="warehousePasswordInput" class="form-input" placeholder="Enter password (default: password123)" required value="password123">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" id="warehouseLoginSubmitBtn">
+                    🏢 Sign In as Warehouse Manager
+                </button>
+            </form>
+
+            <!-- Warehouse Pre-seeded Demo Switcher -->
+            <div id="warehouseDemoBox" class="demo-customers-box hidden">
+                <div class="demo-title">Pre-Seeded Warehouse Manager Accounts (1-Click Login)</div>
+                <div id="warehouseDemoChipsContainer" class="demo-chips">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
         <!-- MODULE 1: CUSTOMER PORTAL & DASHBOARD (Teammate 1 - Feature 3) -->
         <!-- ================================================================= -->
-        <div id="customerModuleWrapper">
-            <!-- Auth Section (Login & Sign Up) -->
-            <section id="authSection" class="auth-container">
-                <div class="auth-tabs">
-                    <button class="auth-tab-btn active" data-tab="login" id="tabLoginBtn">Sign In</button>
-                    <button class="auth-tab-btn" data-tab="signup" id="tabSignupBtn">Create Account</button>
-                </div>
-
-                <!-- Login Form -->
-                <form id="loginForm">
-                    <div class="form-group">
-                        <label class="form-label" for="loginIdentifier">Customer Name or Phone</label>
-                        <input type="text" id="loginIdentifier" class="form-input" placeholder="e.g. Alice Johnson or +1-555-0101" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" id="loginSubmitBtn">
-                        Sign In to Portal
-                    </button>
-                </form>
-
-                <!-- Signup Form -->
-                <form id="signupForm" class="hidden">
-                    <div class="form-group">
-                        <label class="form-label" for="signupName">Full Name</label>
-                        <input type="text" id="signupName" class="form-input" placeholder="e.g. Eleanor Vance" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="signupPhone">Phone Number</label>
-                        <input type="tel" id="signupPhone" class="form-input" placeholder="+1-555-0199" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="signupAddress">Delivery Address & Zone</label>
-                        <input type="text" id="signupAddress" class="form-input" placeholder="452 Skyline Blvd, North Zone" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="signupCredit">Initial Store Credit ($)</label>
-                        <input type="number" id="signupCredit" class="form-input" value="0.00" step="5.00" min="0">
-                    </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" id="signupSubmitBtn">
-                        Create Customer Account
-                    </button>
-                </form>
-
-                <!-- Instant One-Click Demo Customer Switcher -->
-                <div class="demo-customers-box">
-                    <div class="demo-title">Quick Demo Login (Pre-seeded Accounts)</div>
-                    <div id="demoChipsContainer" class="demo-chips">
-                        <!-- Populated dynamically via JS -->
-                    </div>
-                </div>
-            </section>
-
+        <div id="customerModuleWrapper" class="hidden">
             <!-- Customer Dashboard Section -->
-            <section id="dashboardSection" class="hidden">
+            <section id="dashboardSection">
                 <!-- Dashboard Welcome Banner -->
                 <div class="dashboard-header">
                     <div>
@@ -203,6 +275,312 @@
                 </div>
             </section>
         </div>
+
+        <!-- ================================================================= -->
+        <!-- MODULE: RETURN TRACKING & WORKFLOW CONSOLE (Teammate 1 - Feature 2) -->
+        <!-- ================================================================= -->
+        <section id="returnsSection" class="hidden">
+            <div class="dashboard-header">
+                <div>
+                    <h2 class="dashboard-heading">↩️ Return Tracking & Workflow Console</h2>
+                    <p class="dashboard-subheading">
+                        Track customer return requests linked to original orders: <code>Return Initiated ➔ Mailed Back ➔ Arrived at Warehouse ➔ Refund Approved</code> with automatic store credit refunds.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <div class="inventory-view-toggle">
+                        <button id="viewReturnsPipelineBtn" class="btn btn-primary btn-sm">Workflow Pipeline</button>
+                        <button id="viewReturnsTableBtn" class="btn btn-outline btn-sm">Relational Table</button>
+                    </div>
+                    <button id="openGlobalReturnModalBtn" class="btn btn-danger btn-sm">
+                        <span>+</span> Create Return Request
+                    </button>
+                </div>
+            </div>
+
+            <!-- Returns KPI Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Total Return Requests</span>
+                        <span class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">All Records</span>
+                    </div>
+                    <div id="retKpiTotal" class="metric-value">0</div>
+                    <div class="metric-subtext">Total return workflows initiated</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">In Transit (Mailed Back)</span>
+                        <span class="metric-badge" style="background: var(--accent-warning-bg); color: var(--accent-warning);">📦 En Route</span>
+                    </div>
+                    <div id="retKpiMailedBack" class="metric-value" style="color: var(--accent-warning);">0</div>
+                    <div class="metric-subtext">Packages handed over to return carrier</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Arrived at Warehouse</span>
+                        <span class="metric-badge" style="background: rgba(147, 51, 234, 0.15); color: #c084fc;">🏢 At Hub</span>
+                    </div>
+                    <div id="retKpiAtWarehouse" class="metric-value" style="color: #c084fc;">0</div>
+                    <div class="metric-subtext">Received at hub awaiting inspection/approval</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Total Refund Volume</span>
+                        <span class="metric-badge" style="background: var(--accent-success-bg); color: var(--accent-success);">💳 Credited</span>
+                    </div>
+                    <div id="retKpiRefundVolume" class="metric-value highlight-credit">$0.00</div>
+                    <div class="metric-subtext">Store credit refunds credited to customer balances</div>
+                </div>
+            </div>
+
+            <!-- Filters & Search Toolbar -->
+            <div class="inventory-toolbar">
+                <div class="toolbar-filters">
+                    <div class="toolbar-group">
+                        <label class="form-label" for="filterReturnStatus">Filter by Workflow Status</label>
+                        <select id="filterReturnStatus" class="form-select">
+                            <option value="all">All Return Statuses (Full Pipeline)</option>
+                            <option value="Return Initiated">Return Initiated (Label Created)</option>
+                            <option value="Mailed Back">Mailed Back (In Transit)</option>
+                            <option value="Arrived at Warehouse">Arrived at Warehouse (Inspection Queue)</option>
+                            <option value="Refund Approved">Refund Approved (Credited)</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group" style="flex: 1.5;">
+                        <label class="form-label" for="searchReturnInput">Search Return, Order, or Customer</label>
+                        <input type="text" id="searchReturnInput" class="form-input" placeholder="Search by Return #ID, Order #ID, customer name, phone, address...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW A: Returns Workflow Pipeline Grid -->
+            <div id="returnsPipelineView">
+                <div id="returnsCardsContainer" class="returns-grid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- VIEW B: Returns Relational Table View -->
+            <div id="returnsTableView" class="hidden">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span>📜</span> Relational Return Tracker Table (<code>Returns ⋈ Orders ⋈ Customer</code>)
+                        </h3>
+                        <span id="returnsTableCountBadge" class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">0 Records</span>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Return ID</th>
+                                        <th>Original Order</th>
+                                        <th>Customer Details</th>
+                                        <th>Returned Items</th>
+                                        <th>Refund Amount</th>
+                                        <th>Date Requested</th>
+                                        <th>Workflow Status</th>
+                                        <th style="text-align: right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="returnsTableBody">
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- MODULE: MISSING SALES REPORT & PENETRATION (Teammate 1 - Feature 1) -->
+        <!-- ================================================================= -->
+        <section id="missingSalesSection" class="hidden">
+            <div class="dashboard-header">
+                <div>
+                    <h2 class="dashboard-heading">📉 Missing Sales Report & Customer Penetration</h2>
+                    <p class="dashboard-subheading">
+                        Relational query: <code>Customer ⋈ Orders ⋈ Order_Items ⋈ Items</code> identifying customers who have <strong>never bought</strong> a specific product or category.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <div class="inventory-view-toggle">
+                        <button id="viewMissingSalesListBtn" class="btn btn-primary btn-sm">Targeted Missing List</button>
+                        <button id="viewMissingSalesMatrixBtn" class="btn btn-outline btn-sm">Full Penetration Matrix</button>
+                    </div>
+                    <button id="openPromoCampaignModalBtn" class="btn btn-secondary btn-sm">
+                        <span>📢</span> Launch Targeted Promo Offer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Global High-Level Penetration KPIs -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Total Customer Base</span>
+                        <span class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">Accounts</span>
+                    </div>
+                    <div id="msKpiTotalCustomers" class="metric-value">0</div>
+                    <div class="metric-subtext">Registered customer accounts evaluated</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Target Item Penetration</span>
+                        <span class="metric-badge" style="background: var(--accent-success-bg); color: var(--accent-success);">Conversion</span>
+                    </div>
+                    <div id="msKpiPenetrationRate" class="metric-value" style="color: #34d399;">0.0%</div>
+                    <div class="metric-subtext">Percentage of customers who bought selected item</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Missing Customers (Untapped)</span>
+                        <span class="metric-badge" style="background: var(--accent-warning-bg); color: var(--accent-warning);">Never Bought</span>
+                    </div>
+                    <div id="msKpiMissingCount" class="metric-value" style="color: var(--accent-warning);">0</div>
+                    <div class="metric-subtext">Customers with zero lifetime purchases of this item</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Purchased Customers</span>
+                        <span class="metric-badge" style="background: rgba(147, 51, 234, 0.15); color: #c084fc;">Active Buyers</span>
+                    </div>
+                    <div id="msKpiPurchasedCount" class="metric-value" style="color: #c084fc;">0</div>
+                    <div class="metric-subtext">Customers who have ordered this item</div>
+                </div>
+            </div>
+
+            <!-- Item Selector Ribbon -->
+            <div class="driver-select-bar">
+                <span class="driver-select-label">Select Catalog Product:</span>
+                <div id="missingSalesItemPills" class="item-pills-scroll">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Selected Target Item Banner & Penetration Meter -->
+            <div id="targetItemBanner" class="item-target-banner">
+                <div>
+                    <div class="item-target-title">
+                        <span>📦</span> <span id="targetItemName">Heavy Duty Shipping Box (L)</span>
+                    </div>
+                    <div id="targetItemSku" class="item-target-sku">SKU: BOX-HD-L-001 • Threshold: 50 units</div>
+                </div>
+
+                <div class="penetration-meter">
+                    <div style="flex: 1;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+                            <span>Customer Adoption</span>
+                            <span id="targetItemAdoptionText">2 / 6 Customers</span>
+                        </div>
+                        <div class="progress-track">
+                            <div id="targetItemProgressBar" class="progress-bar-inner" style="width: 33.3%;"></div>
+                        </div>
+                    </div>
+                    <div id="targetItemPenetrationBadge" class="penetration-percentage-val">33.3%</div>
+                </div>
+            </div>
+
+            <!-- VIEW A: Targeted Missing Customers Cards / Table -->
+            <div id="missingCustomersListView">
+                <div class="dashboard-grid">
+                    <!-- Left: Missing Customers (Never Bought) -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">
+                                    <span>⚠️</span> Customers Who Have Never Bought This Item
+                                </h3>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                                    High-opportunity targets for sales promotions and inventory cross-selling.
+                                </div>
+                            </div>
+                            <span id="missingCustomersCountBadge" class="metric-badge" style="background: var(--accent-warning-bg); color: var(--accent-warning);">0 Customers</span>
+                        </div>
+                        <div class="card-body">
+                            <div id="missingCustomersCardsContainer" class="missing-customers-grid">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Existing Buyers & Item Comparison -->
+                    <div style="display: flex; flex-direction: column; gap: 1.75rem;">
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <span>✅</span> Verified Buyers of This Item
+                                </h3>
+                                <span id="purchasedCustomersCountBadge" class="metric-badge" style="background: var(--accent-success-bg); color: var(--accent-success);">0 Buyers</span>
+                            </div>
+                            <div class="card-body" style="padding: 0;">
+                                <div class="table-responsive">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Customer</th>
+                                                <th>Units Bought</th>
+                                                <th>Orders</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="purchasedCustomersTableBody">
+                                            <!-- Populated dynamically via JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-card" style="background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(37, 99, 235, 0.05) 100%);">
+                            <div class="card-body">
+                                <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem;">Feature Scope Reference</h4>
+                                <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45;">
+                                    <strong>Teammate 1 - Feature 1 (Missing Sales Report)</strong>: Joins <code>Customer ⋈ Orders ⋈ Order_Items ⋈ Items</code> to pinpoint every customer who has zero recorded purchases for any given catalog item, providing conversion analytics and targeted promo tools.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW B: Full Penetration Matrix View -->
+            <div id="missingSalesMatrixView" class="hidden">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title">
+                                <span>📊</span> Complete Customer–Product Sales Penetration Matrix
+                            </h3>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                                Cross-product grid mapping every customer against the entire catalog to identify missing sales across all products.
+                            </div>
+                        </div>
+                        <span id="matrixItemsCountBadge" class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">8 Catalog Items</span>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="table-responsive">
+                            <table class="data-table" id="penetrationMatrixTable">
+                                <thead id="penetrationMatrixThead">
+                                    <!-- Populated dynamically via JS -->
+                                </thead>
+                                <tbody id="penetrationMatrixTbody">
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- ================================================================= -->
         <!-- MODULE 2: DRIVER EARNINGS & PAYCHECK (Teammate 2 - Feature 2) -->
@@ -429,6 +807,442 @@
         </section>
 
         <!-- ================================================================= -->
+        <!-- MODULE: DRIVER–WAREHOUSE COVERAGE MAP (Teammate 2 - Feature 1) -->
+        <!-- ================================================================= -->
+        <section id="coverageMapSection" class="hidden">
+            <div class="dashboard-header">
+                <div>
+                    <h2 class="dashboard-heading">🗺️ Driver–Warehouse Coverage Map</h2>
+                    <p class="dashboard-subheading">
+                        Relational query: <code>Drivers ⋈ Warehouses ON location_zone</code> mapping which drivers realistically service each fulfillment facility.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <div class="inventory-view-toggle">
+                        <button id="viewCoverageCardsBtn" class="btn btn-primary btn-sm">Facility Hubs</button>
+                        <button id="viewCoverageTableBtn" class="btn btn-outline btn-sm">SQL Join View</button>
+                    </div>
+                    <button id="openReassignZoneModalBtn" class="btn btn-secondary btn-sm">
+                        <span>🔄</span> Reassign Driver Zone
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coverage KPIs -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Warehouses Monitored</span>
+                        <span class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">Hubs</span>
+                    </div>
+                    <div id="covKpiWarehouses" class="metric-value">4</div>
+                    <div class="metric-subtext">Active distribution centers across 4 zones</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Assigned Fleet Drivers</span>
+                        <span class="metric-badge" style="background: var(--accent-success-bg); color: var(--accent-success);">Mapped</span>
+                    </div>
+                    <div id="covKpiAssignedDrivers" class="metric-value">0</div>
+                    <div class="metric-subtext">Drivers matched to local warehouse facilities</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Available Drivers</span>
+                        <span class="metric-badge" style="background: var(--accent-success-bg); color: var(--accent-success);">Ready</span>
+                    </div>
+                    <div id="covKpiAvailableDrivers" class="metric-value">0</div>
+                    <div class="metric-subtext">Drivers available for immediate dispatch</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Coverage Density</span>
+                        <span class="metric-badge" style="background: rgba(147, 51, 234, 0.12); color: #c084fc;">Ratio</span>
+                    </div>
+                    <div id="covKpiCoverageRatio" class="metric-value" style="font-size: 1.4rem;">--</div>
+                    <div class="metric-subtext">Average assigned drivers per warehouse hub</div>
+                </div>
+            </div>
+
+            <!-- Zone Filter Toolbar -->
+            <div class="inventory-toolbar">
+                <div class="toolbar-filters">
+                    <div class="toolbar-group">
+                        <label class="form-label" for="filterCoverageZone">Filter by Geographic Zone</label>
+                        <select id="filterCoverageZone" class="form-select">
+                            <option value="all">All Geographic Zones (Full City Coverage)</option>
+                            <option value="North Zone">North Zone</option>
+                            <option value="South Zone">South Zone</option>
+                            <option value="East Zone">East Zone</option>
+                            <option value="West Zone">West Zone</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group" style="flex: 1.5;">
+                        <label class="form-label" for="searchCoverageDriver">Search Driver or Warehouse</label>
+                        <input type="text" id="searchCoverageDriver" class="form-input" placeholder="Search by driver name, warehouse hub, status...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW A: Coverage Facility Hub Cards -->
+            <div id="coverageCardsView">
+                <div id="coverageCardsContainer" class="coverage-grid">
+                    <!-- Dynamically populated via JS -->
+                </div>
+            </div>
+
+            <!-- VIEW B: Detailed Relational Join Table -->
+            <div id="coverageTableView" class="hidden">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span>🗺️</span> Relational Query Result: <code>Warehouses ⋈ Drivers ON location_zone</code>
+                        </h3>
+                        <span id="coverageTableCountBadge" class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">0 Rows</span>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Warehouse Hub</th>
+                                        <th>Location Zone</th>
+                                        <th>Driver Name & ID</th>
+                                        <th>Status</th>
+                                        <th>Rating</th>
+                                        <th>Base & Mileage Rate</th>
+                                        <th>Active Loads</th>
+                                        <th style="text-align: right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="coverageTableBody">
+                                    <!-- Dynamically populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- MODULE: ORDER DISPATCH & PRIORITY QUEUE (Teammate 2 - Feature 3) -->
+        <!-- ================================================================= -->
+        <section id="dispatchSection" class="hidden">
+            <div class="dashboard-header">
+                <div>
+                    <h2 class="dashboard-heading">🚀 Order Dispatch Console & Priority Queue</h2>
+                    <p class="dashboard-subheading">
+                        Assign drivers to orders: sets <code>orders.driver_id</code>, updates status to <code>Out for Delivery</code>, and sets driver status to <code>Busy</code> with automatic notification dispatch.
+                    </p>
+                </div>
+                <div class="inventory-view-toggle">
+                    <button id="viewDispatchBatchesTabBtn" class="btn btn-primary btn-sm">Zone Batches & Orders</button>
+                    <button id="viewDriverQueueTabBtn" class="btn btn-outline btn-sm">Priority Driver Queues</button>
+                </div>
+            </div>
+
+            <!-- Dispatch KPI Grid -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Pending Orders</span>
+                        <span class="metric-badge" style="background: var(--accent-warning-bg); color: var(--accent-warning);">Awaiting Dispatch</span>
+                    </div>
+                    <div id="dspKpiPending" class="metric-value" style="color: var(--accent-warning);">0</div>
+                    <div class="metric-subtext">Orders ready to bundle and dispatch</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Express Priority</span>
+                        <span class="metric-badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">⚡ Fast Lane</span>
+                    </div>
+                    <div id="dspKpiExpress" class="metric-value" style="color: #f87171;">0</div>
+                    <div class="metric-subtext">Premium orders prioritized to front of queue</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Out for Delivery</span>
+                        <span class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">In Transit</span>
+                    </div>
+                    <div id="dspKpiActive" class="metric-value" style="color: var(--accent-info);">0</div>
+                    <div class="metric-subtext">Orders currently assigned to active drivers</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Available Fleet Drivers</span>
+                        <span class="metric-badge" style="background: var(--accent-success-bg); color: var(--accent-success);">Ready</span>
+                    </div>
+                    <div id="dspKpiAvailDrivers" class="metric-value" style="color: var(--accent-success);">0</div>
+                    <div class="metric-subtext">Drivers ready for new order batch assignments</div>
+                </div>
+            </div>
+
+            <!-- TAB 1: Zone Batches & Order Dispatcher View -->
+            <div id="dispatchBatchesView">
+                <!-- Zone Pending Batches Ribbon -->
+                <div class="zone-batches-container">
+                    <div class="zone-batches-header">
+                        <h3 class="section-title">📍 Geographic Zone Batches (Ready for 1-Click Assignment)</h3>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                            Bundles pending customer orders by localized distribution regions to eliminate wasted mileage and streamline driver dispatch.
+                        </div>
+                    </div>
+                    <div id="zoneBatchesCardsContainer" class="zone-batches-grid">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Orders Table Card -->
+                <div class="dashboard-card" style="margin-top: 1.75rem;">
+                    <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h3 class="card-title">
+                                <span>📦</span> Orders Fulfillment Queue & Custom Batch Dispatch
+                            </h3>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                                Select individual orders or filter by zone/status to assign to an available driver.
+                            </div>
+                        </div>
+
+                        <!-- Batch Action Controls -->
+                        <div class="batch-action-bar">
+                            <select id="bulkDriverSelect" class="form-select form-select-sm" style="min-width: 180px;">
+                                <option value="">-- Choose Driver --</option>
+                            </select>
+                            <button id="bulkDispatchBtn" class="btn btn-primary btn-sm" disabled>
+                                <span>🚀</span> Dispatch Selected (<span id="selectedOrdersCount">0</span>)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Table Filters -->
+                    <div class="table-filters-row">
+                        <div class="filter-chip-group">
+                            <button class="filter-chip active" data-filter-status="all">All Orders</button>
+                            <button class="filter-chip" data-filter-status="Pending">Pending Only</button>
+                            <button class="filter-chip" data-filter-status="active">Out for Delivery</button>
+                            <button class="filter-chip" data-filter-status="Delivered">Delivered</button>
+                        </div>
+
+                        <div style="display: flex; gap: 0.75rem; align-items: center;">
+                            <select id="dispatchTableZoneFilter" class="form-select form-select-sm">
+                                <option value="all">All Zones</option>
+                                <option value="North Zone">North Zone</option>
+                                <option value="South Zone">South Zone</option>
+                                <option value="East Zone">East Zone</option>
+                                <option value="West Zone">West Zone</option>
+                            </select>
+
+                            <select id="dispatchTablePriorityFilter" class="form-select form-select-sm">
+                                <option value="all">All Shipping</option>
+                                <option value="Express">⚡ Express Only</option>
+                                <option value="Standard">Standard Only</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="card-body" style="padding: 0;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px;"><input type="checkbox" id="selectAllOrdersCheckbox"></th>
+                                        <th>Order ID & Priority</th>
+                                        <th>Customer & Contact</th>
+                                        <th>Destination & Zone</th>
+                                        <th>Order Items</th>
+                                        <th>Status</th>
+                                        <th>Assigned Driver</th>
+                                        <th style="text-align: right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dispatchOrdersTableBody">
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: Driver Priority Delivery Queue (Express Lane Skipper) -->
+            <div id="driverQueueView" class="hidden">
+                <!-- Driver Selection Ribbon -->
+                <div class="driver-select-bar">
+                    <span class="driver-select-label">Select Active Driver:</span>
+                    <div id="queueDriverPillsContainer" class="driver-pills-list">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <div class="dashboard-grid" style="margin-top: 1.5rem;">
+                    <!-- Left: Driver Active Queue -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">
+                                    <span>⚡</span> <span id="queueDriverTitle">Driver Priority Delivery Route</span>
+                                </h3>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                                    <strong>Express Lane Skipper</strong>: Orders sequenced with <code>Express</code> premium packages at the front of the driver route.
+                                </div>
+                            </div>
+                            <span id="queueLengthBadge" class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">0 Orders</span>
+                        </div>
+                        <div class="card-body">
+                            <div id="driverQueueListContainer" class="queue-list">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Driver Status & Live Dispatch Summary -->
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3 class="card-title"><span>👤</span> Driver Dispatch Profile</h3>
+                                <span id="queueDriverStatusBadge" class="badge badge-dispatched">Busy</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="detail-row">
+                                    <span class="detail-label">Full Name:</span>
+                                    <span id="queueDriverName" class="detail-val">--</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Assigned Zone:</span>
+                                    <span id="queueDriverZone" class="detail-val">--</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Driver Rating:</span>
+                                    <span id="queueDriverRating" class="detail-val" style="color: #fbbf24;">★ 5.00</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Compensation:</span>
+                                    <span id="queueDriverRate" class="detail-val">$25.00 base + $0.45/mi</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-card" style="background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(37, 99, 235, 0.05) 100%);">
+                            <div class="card-body">
+                                <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem;">Feature Scope Reference</h4>
+                                <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45;">
+                                    <strong>Teammate 2 - Feature 3 (Order Dispatch & Notifications)</strong>: Assigns available drivers to order groups, sets <code>order_status = 'Out for Delivery'</code>, sets <code>status_flag = 'Busy'</code>, routes Express orders first, and writes SMS & Email notifications to <code>Notification_Queue</code>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- MODULE: NOTIFICATIONS & SMS/EMAIL SIMULATOR (Teammate 2 - Feature 3) -->
+        <!-- ================================================================= -->
+        <section id="notificationsSection" class="hidden">
+            <div class="dashboard-header">
+                <div>
+                    <h2 class="dashboard-heading">🔔 Customer Notifications & Alerts Simulator</h2>
+                    <p class="dashboard-subheading">
+                        Live simulated dispatch alerts, SMS notifications, and email queue for orders.
+                    </p>
+                </div>
+                <div>
+                    <button id="openSimulateNotifModalBtn" class="btn btn-primary">
+                        <span>+</span> Simulate Custom Notification
+                    </button>
+                </div>
+            </div>
+
+            <!-- Notifications KPI Grid -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Total Notifications</span>
+                        <span class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">History</span>
+                    </div>
+                    <div id="notifKpiTotal" class="metric-value">0</div>
+                    <div class="metric-subtext">Total automated alerts logged in system</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">SMS Text Alerts</span>
+                        <span class="metric-badge" style="background: var(--accent-success-bg); color: var(--accent-success);">Mobile</span>
+                    </div>
+                    <div id="notifKpiSms" class="metric-value" style="color: var(--accent-success);">0</div>
+                    <div class="metric-subtext">Direct delivery updates dispatched via SMS</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Email Confirmations</span>
+                        <span class="metric-badge" style="background: rgba(147, 51, 234, 0.12); color: #c084fc;">Email</span>
+                    </div>
+                    <div id="notifKpiEmail" class="metric-value" style="color: #c084fc;">0</div>
+                    <div class="metric-subtext">Electronic dispatch receipts delivered</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Delivered Notices</span>
+                        <span class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">Completed</span>
+                    </div>
+                    <div id="notifKpiDelivered" class="metric-value">0</div>
+                    <div class="metric-subtext">Successful delivery confirmations logged</div>
+                </div>
+            </div>
+
+            <!-- Notification Filters -->
+            <div class="inventory-toolbar">
+                <div class="toolbar-filters">
+                    <div class="toolbar-group">
+                        <label class="form-label" for="filterNotifChannel">Channel Type</label>
+                        <select id="filterNotifChannel" class="form-select">
+                            <option value="all">All Channels (SMS & Email)</option>
+                            <option value="SMS">SMS Text Messages</option>
+                            <option value="Email">Email Notifications</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group">
+                        <label class="form-label" for="filterNotifStatus">Delivery Status</label>
+                        <select id="filterNotifStatus" class="form-select">
+                            <option value="all">All Statuses</option>
+                            <option value="Sent">Sent (Out for Delivery)</option>
+                            <option value="Delivered">Delivered Confirmation</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group" style="flex: 1.5;">
+                        <label class="form-label" for="searchNotifInput">Search Message / Recipient</label>
+                        <input type="text" id="searchNotifInput" class="form-input" placeholder="Search by recipient phone, order ID, or text...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Feed -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <span>📱</span> Live Customer Notification Queue Feed
+                    </h3>
+                    <span id="notifFeedCountBadge" class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">0 Messages</span>
+                </div>
+                <div class="card-body">
+                    <div id="notificationsFeedContainer" class="notif-feed-list">
+                        <!-- Dynamically populated via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
         <!-- MODULE 3: LOW STOCK ALERT & INVENTORY (Teammate 3 - Feature 2) -->
         <!-- ================================================================= -->
         <section id="lowStockSection" class="hidden">
@@ -552,6 +1366,304 @@
                 </div>
             </div>
 
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- MODULE: ITEM–WAREHOUSE STOCK MATRIX (Teammate 3 - Feature 1)     -->
+        <!-- Join Items with Warehouses (via Warehouse_Stocks)                -->
+        <!-- ================================================================= -->
+        <section id="stockMatrixSection" class="hidden">
+            <!-- Header & Action Controls -->
+            <div class="dashboard-header">
+                <div>
+                    <h2 class="dashboard-heading">📦 Item–Warehouse Stock Matrix</h2>
+                    <p class="dashboard-subheading">
+                        Relational 2D distribution matrix joining <code>Items</code> &hArr; <code>Warehouses</code> via <code>Warehouse_Stocks</code> across all regional fulfillment centers.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <button id="openInterWarehouseTransferBtn" class="btn btn-primary btn-sm">
+                        <span>⇄</span> Stock Transfer
+                    </button>
+                    <div class="inventory-view-toggle">
+                        <button id="viewMatrixPivotBtn" class="btn btn-primary btn-sm">2D Pivot Grid</button>
+                        <button id="viewMatrixListBtn" class="btn btn-outline btn-sm">Distribution Table</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matrix Summary KPIs -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Catalog SKUs</span>
+                        <span class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">Catalog Master</span>
+                    </div>
+                    <div id="smKpiTotalItems" class="metric-value">8</div>
+                    <div class="metric-subtext">Active items in catalog</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Fulfillment Warehouses</span>
+                        <span class="metric-badge" style="background: var(--accent-success-bg); color: var(--accent-success);">4 Hubs</span>
+                    </div>
+                    <div id="smKpiTotalWarehouses" class="metric-value">4</div>
+                    <div class="metric-subtext">North, South, East & West Zones</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Network On-Hand Stock</span>
+                        <span class="metric-badge" style="background: rgba(37, 99, 235, 0.15); color: #60a5fa;">Sellable</span>
+                    </div>
+                    <div id="smKpiTotalUnits" class="metric-value" style="color: #60a5fa;">0 units</div>
+                    <div class="metric-subtext">Total active inventory units</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Stock Shortages</span>
+                        <span class="metric-badge" style="background: var(--accent-warning-bg); color: var(--accent-warning);">Low / Out</span>
+                    </div>
+                    <div id="smKpiLowStockPoints" class="metric-value" style="color: var(--accent-warning);">0</div>
+                    <div class="metric-subtext">Depots below item safety threshold</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Quarantined Stock</span>
+                        <span class="metric-badge" style="background: var(--accent-danger-bg); color: var(--accent-danger);">Locked</span>
+                    </div>
+                    <div id="smKpiQuarantinedUnits" class="metric-value" style="color: var(--accent-danger);">0 units</div>
+                    <div class="metric-subtext">Damaged & expired units isolated</div>
+                </div>
+            </div>
+
+            <!-- Toolbar & Filter Controls -->
+            <div class="inventory-toolbar">
+                <div class="toolbar-filters">
+                    <div class="toolbar-group">
+                        <label class="form-label" for="filterMatrixWarehouse">Facility Focus</label>
+                        <select id="filterMatrixWarehouse" class="form-select">
+                            <option value="all">All Regional Warehouses</option>
+                            <option value="1">North Central Hub (North Zone)</option>
+                            <option value="2">South River Logistics (South Zone)</option>
+                            <option value="3">East Valley Depot (East Zone)</option>
+                            <option value="4">West Coast Fulfillment (West Zone)</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group">
+                        <label class="form-label" for="filterMatrixStatus">Stock Health</label>
+                        <select id="filterMatrixStatus" class="form-select">
+                            <option value="all">All Stock Statuses</option>
+                            <option value="Healthy">Optimal (Above Safety Threshold)</option>
+                            <option value="Low Stock">Low Stock Shortage</option>
+                            <option value="Critical">Critical Shortage (&le; 35%)</option>
+                            <option value="Out of Stock">Out of Stock (0 units)</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group" style="flex: 1.5;">
+                        <label class="form-label" for="searchMatrixInput">Search Product Name / SKU</label>
+                        <input type="text" id="searchMatrixInput" class="form-input" placeholder="Search catalog items, SKUs (e.g. BOX, WRAP, TAPE)...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 1: 2D PIVOT MATRIX GRID -->
+            <div id="matrixPivotView">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title">
+                                <span>📊</span> 2D Cross-Facility Inventory Distribution Grid
+                            </h3>
+                            <div style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.2rem;">
+                                Rows = Products (<code>Items</code>) | Columns = Storage Facilities (<code>Warehouses</code>) | Cell Values = Stock Levels (<code>Warehouse_Stocks</code>)
+                            </div>
+                        </div>
+                        <span id="matrixPivotCountBadge" class="metric-badge" style="background: rgba(255,255,255,0.06); color: var(--text-secondary);">8 Products &times; 4 Hubs</span>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="stock-matrix-table-container">
+                            <table class="stock-matrix-pivot-table">
+                                <thead id="matrixPivotThead">
+                                    <!-- Populated dynamically via JS -->
+                                </thead>
+                                <tbody id="matrixPivotTbody">
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: DETAILED FLAT DISTRIBUTION LIST -->
+            <div id="matrixListView" class="hidden">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <span>📋</span> Detailed Item–Warehouse Stock List
+                        </h3>
+                        <span id="matrixListCountBadge" class="metric-badge" style="background: rgba(255,255,255,0.06); color: var(--text-secondary);">32 Storage Points</span>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Warehouse & Zone</th>
+                                        <th>Item Name & SKU</th>
+                                        <th>Current Stock</th>
+                                        <th>Safety Threshold</th>
+                                        <th>Quarantined</th>
+                                        <th>Health Status</th>
+                                        <th style="text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="matrixListTableBody">
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- MODULE: GOODS MONITORING (Teammate 3 - Feature 3)                 -->
+        <!-- Report/insert view over Damaged_Inventory & Expired_Inventory     -->
+        <!-- Quarantined stock can NEVER be resold                            -->
+        <!-- ================================================================= -->
+        <section id="goodsMonitoringSection" class="hidden">
+            <!-- Header & Action Controls -->
+            <div class="dashboard-header">
+                <div>
+                    <h2 class="dashboard-heading">🛡️ Goods Monitoring & Quarantine Control</h2>
+                    <p class="dashboard-subheading">
+                        Unified reporting and quarantine isolation view over <code>Damaged_Inventory</code> and <code>Expired_Inventory</code> ensuring compromised stock can NEVER be resold or dispatched.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <button id="openLogDamageModalBtn" class="btn btn-danger btn-sm">
+                        <span>💥</span> Log Damaged Goods
+                    </button>
+                    <button id="openLogExpiryModalBtn" class="btn btn-warning btn-sm" style="background: #d97706; border-color: #d97706; color: #fff;">
+                        <span>⏳</span> Log Expired Batch
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quarantine Security Alert Banner -->
+            <div class="quarantine-alert-banner">
+                <div class="quarantine-banner-icon">🔒</div>
+                <div class="quarantine-banner-content">
+                    <div class="quarantine-banner-title">Quarantined Inventory Security & Isolation Guarantee</div>
+                    <div class="quarantine-banner-text">
+                        All physical units logged in <code>Damaged_Inventory</code> and <code>Expired_Inventory</code> are immediately isolated from active sellable <code>Warehouse_Stocks</code>. Quarantined stock is locked from order allocation and cannot be resold to customers.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Goods Monitoring KPIs -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Total Quarantined</span>
+                        <span class="metric-badge" style="background: var(--accent-danger-bg); color: var(--accent-danger);">Locked</span>
+                    </div>
+                    <div id="gmKpiTotalQuarantined" class="metric-value" style="color: var(--accent-danger);">0 units</div>
+                    <div class="metric-subtext">Damaged and expired units quarantined</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Damaged Inventory</span>
+                        <span class="metric-badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">Physical Damage</span>
+                    </div>
+                    <div id="gmKpiDamagedUnits" class="metric-value" style="color: #f87171;">0 units</div>
+                    <div class="metric-subtext">Crushed, punctured, or wet goods</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Expired Inventory</span>
+                        <span class="metric-badge" style="background: var(--accent-warning-bg); color: var(--accent-warning);">Shelf-Life Expiry</span>
+                    </div>
+                    <div id="gmKpiExpiredUnits" class="metric-value" style="color: #fbbf24;">0 units</div>
+                    <div class="metric-subtext">Batches past shelf-life threshold</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Active in Quarantine</span>
+                        <span class="metric-badge" style="background: var(--accent-info-bg); color: var(--accent-info);">In QA Bay</span>
+                    </div>
+                    <div id="gmKpiActiveQuarantine" class="metric-value" style="color: var(--accent-info);">0 units</div>
+                    <div class="metric-subtext">Awaiting final disposal decision</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Written Off / Disposed</span>
+                        <span class="metric-badge" style="background: var(--accent-success-bg); color: var(--accent-success);">Archived</span>
+                    </div>
+                    <div id="gmKpiWrittenOff" class="metric-value" style="color: var(--accent-success);">0 units</div>
+                    <div class="metric-subtext">Officially decommissioned or recycled</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-card-header">
+                        <span class="metric-label">Affected Depots</span>
+                        <span class="metric-badge" style="background: rgba(255,255,255,0.06); color: var(--text-secondary);">Facilities</span>
+                    </div>
+                    <div id="gmKpiAffectedWarehouses" class="metric-value">0</div>
+                    <div class="metric-subtext">Warehouses with quarantine bays</div>
+                </div>
+            </div>
+
+            <!-- Toolbar & Filter Controls -->
+            <div class="inventory-toolbar">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                    <button id="gmFilterTabAll" class="filter-chip active" data-type="all">All Quarantined Goods</button>
+                    <button id="gmFilterTabDamaged" class="filter-chip" data-type="damaged">💥 Damaged Inventory</button>
+                    <button id="gmFilterTabExpired" class="filter-chip" data-type="expired">⏳ Expired Batches</button>
+                </div>
+                <div class="toolbar-filters">
+                    <div class="toolbar-group">
+                        <label class="form-label" for="filterGmWarehouse">Warehouse Facility</label>
+                        <select id="filterGmWarehouse" class="form-select">
+                            <option value="all">All Storage Facilities</option>
+                            <option value="1">North Central Hub (North Zone)</option>
+                            <option value="2">South River Logistics (South Zone)</option>
+                            <option value="3">East Valley Depot (East Zone)</option>
+                            <option value="4">West Coast Fulfillment (West Zone)</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group">
+                        <label class="form-label" for="filterGmStatus">Quarantine Status</label>
+                        <select id="filterGmStatus" class="form-select">
+                            <option value="all">All Quarantine States</option>
+                            <option value="Quarantined">Active Quarantine (Locked)</option>
+                            <option value="Written Off">Written Off (Decommissioned)</option>
+                            <option value="Disposed">Disposed / Recycled</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-group" style="flex: 1.5;">
+                        <label class="form-label" for="searchGmInput">Search Compromised Stock</label>
+                        <input type="text" id="searchGmInput" class="form-input" placeholder="Search by item name, SKU, damage reason, batch lot #, inspector...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quarantined Goods Cards Feed -->
+            <div id="goodsMonitoringFeedView">
+                <div id="goodsMonitoringCardsContainer" class="quarantine-grid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
         </section>
 
     </main>
@@ -804,6 +1916,523 @@
             </div>
             <div class="modal-footer">
                 <button id="submitThresholdBtn" class="btn btn-primary">Update Threshold</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reassign Driver Zone Modal (Coverage Map Module) -->
+    <div id="reassignZoneModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Reassign Driver Coverage Zone</h3>
+                <button id="closeReassignZoneModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                    Update the driver's primary servicing zone to re-map them to a specific warehouse fulfillment facility:
+                </p>
+                <div class="form-group">
+                    <label class="form-label" for="reassignDriverSelect">Select Driver</label>
+                    <select id="reassignDriverSelect" class="form-select">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="reassignZoneSelect">Target Warehouse Location Zone</label>
+                    <select id="reassignZoneSelect" class="form-select">
+                        <option value="North Zone">North Zone (North Central Hub)</option>
+                        <option value="South Zone">South Zone (South River Logistics)</option>
+                        <option value="East Zone">East Zone (East Valley Depot)</option>
+                        <option value="West Zone">West Zone (West Coast Fulfillment)</option>
+                        <option value="Central Zone">Central Zone (Cross-Zone Roamer)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitReassignZoneBtn" class="btn btn-primary">Save & Update Coverage Map</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Single/Quick Dispatch Modal (Dispatch Module) -->
+    <div id="quickDispatchModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Dispatch Order <span id="quickDispatchOrderTitle">#1</span></h3>
+                <button id="closeQuickDispatchModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="order-details-grid" style="margin-bottom: 1.25rem;">
+                    <div>
+                        <div class="detail-label">Customer</div>
+                        <div id="quickDispatchCustomer" class="detail-val">Alice Johnson</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Destination</div>
+                        <div id="quickDispatchAddress" class="detail-val">124 Elm Street, North Zone</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Priority</div>
+                        <div id="quickDispatchPriority" class="detail-val">Standard</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Status Action</div>
+                        <div class="detail-val" style="color: var(--accent-info);">Out for Delivery</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="quickDispatchDriverSelect">Assign Delivery Driver</label>
+                    <select id="quickDispatchDriverSelect" class="form-select">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div class="rate-preview-box">
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Atomic Database Updates:</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; line-height: 1.4;">
+                        • <code>Orders.order_status</code> &rarr; <strong>Out for Delivery</strong><br>
+                        • <code>Orders.driver_id</code> &rarr; <strong>Selected Driver ID</strong><br>
+                        • <code>Drivers.status_flag</code> &rarr; <strong>Busy</strong><br>
+                        • <code>Notification_Queue</code> &rarr; <strong>Logged SMS notification</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitQuickDispatchBtn" class="btn btn-primary">Confirm & Dispatch Order</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulate Custom Notification Modal (Notifications Module) -->
+    <div id="simulateNotifModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Simulate Customer Notification</h3>
+                <button id="closeSimulateNotifModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="simNotifOrderSelect">Target Order</label>
+                    <select id="simNotifOrderSelect" class="form-select">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="simNotifChannelSelect">Delivery Channel</label>
+                    <select id="simNotifChannelSelect" class="form-select">
+                        <option value="SMS">SMS Text Message</option>
+                        <option value="Email">Email Confirmation</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="simNotifRecipient">Recipient (Phone or Email)</label>
+                    <input type="text" id="simNotifRecipient" class="form-input" placeholder="+1-555-0101 or user@example.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="simNotifMessage">Message Payload</label>
+                    <textarea id="simNotifMessage" class="form-textarea" rows="3" placeholder="Enter notification message payload..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitSimulateNotifBtn" class="btn btn-primary">Send & Record Alert</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Create Return Request Modal (Return Tracking Module) -->
+    <div id="globalReturnModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Initiate Customer Return</h3>
+                <button id="closeGlobalReturnModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="globalReturnOrderSelect">Select Original Order to Return</label>
+                    <select id="globalReturnOrderSelect" class="form-select">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="globalReturnReason">Return Reason / Issue Description</label>
+                    <select id="globalReturnReason" class="form-select">
+                        <option value="Damaged during shipping">Damaged during shipping</option>
+                        <option value="Incorrect item or quantity received">Incorrect item or quantity received</option>
+                        <option value="Product defective / unusable">Product defective / unusable</option>
+                        <option value="Customer requested return (unwanted)">Customer requested return (unwanted)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="globalReturnAmount">Refund Credit Amount ($)</label>
+                    <input type="number" id="globalReturnAmount" class="form-input" value="25.00" step="0.50" min="1.00">
+                </div>
+                <div class="rate-preview-box">
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Workflow Lifecycle Initialized:</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; line-height: 1.4;">
+                        • <code>Returns.status</code> &rarr; <strong>Return Initiated</strong><br>
+                        • <code>Notification_Queue</code> &rarr; <strong>Customer return instructions SMS logged</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitGlobalReturnBtn" class="btn btn-danger">Create Return Request</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advance Return Status Modal -->
+    <div id="advanceReturnWorkflowModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Advance Return Status: <span id="advanceReturnTitle">Return #1</span></h3>
+                <button id="closeAdvanceReturnModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="order-details-grid" style="margin-bottom: 1.25rem;">
+                    <div>
+                        <div class="detail-label">Original Order</div>
+                        <div id="advanceReturnOrderNumber" class="detail-val">Order #1</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Customer</div>
+                        <div id="advanceReturnCustomer" class="detail-val">Alice Johnson</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Current Status</div>
+                        <div id="advanceReturnCurrentStatus" class="detail-val" style="color: var(--accent-warning);">Return Initiated</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Refund Amount</div>
+                        <div id="advanceReturnRefundVal" class="detail-val" style="color: var(--accent-success); font-weight: 700;">$25.00</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="advanceReturnNextStatus">Target Workflow Stage</label>
+                    <select id="advanceReturnNextStatus" class="form-select">
+                        <option value="Mailed Back">Mailed Back 📦 (In transit to hub)</option>
+                        <option value="Arrived at Warehouse">Arrived at Warehouse 🏢 (Received at QA depot)</option>
+                        <option value="Refund Approved">Refund Approved 💳 (Add to store credit balance)</option>
+                        <option value="Cancelled">Cancelled ✕ (Invalid return)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="advanceReturnAmountInput">Confirmed Refund Amount ($)</label>
+                    <input type="number" id="advanceReturnAmountInput" class="form-input" step="0.01" min="0">
+                </div>
+
+                <div id="advanceReturnCreditNotice" class="rate-preview-box" style="display: none;">
+                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--accent-success);">
+                        💳 Automatic Store Credit Refunding:
+                    </div>
+                    <div style="font-size: 0.775rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                        Selecting <strong>Refund Approved</strong> will instantly credit this refund amount to the customer's <code>store_credit_balance</code> and dispatch a notification.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitAdvanceReturnBtn" class="btn btn-primary">Update Return Workflow</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Targeted Promotional Campaign Modal (Missing Sales Module) -->
+    <div id="promoCampaignModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Launch Targeted Promo Campaign</h3>
+                <button id="closePromoCampaignModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="order-details-grid" style="margin-bottom: 1.25rem;">
+                    <div>
+                        <div class="detail-label">Promoted Item</div>
+                        <div id="campaignItemName" class="detail-val">Heavy Duty Shipping Box</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Target Audience</div>
+                        <div id="campaignMissingCount" class="detail-val" style="color: var(--accent-warning); font-weight: 700;">4 Missing Customers</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="campaignChannelSelect">Dispatched Channel</label>
+                    <select id="campaignChannelSelect" class="form-select">
+                        <option value="SMS">SMS Direct Message</option>
+                        <option value="Email">Email Marketing Alert</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="campaignPromoMessage">Campaign Offer Message</label>
+                    <textarea id="campaignPromoMessage" class="form-textarea" rows="3"></textarea>
+                </div>
+
+                <div class="rate-preview-box">
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Marketing Automation Action:</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; line-height: 1.4;">
+                        Will automatically generate and log customized promotional alerts in <code>Notification_Queue</code> for all customers who have never bought this item.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitPromoCampaignBtn" class="btn btn-success">
+                    <span>🚀</span> Dispatch Campaign Offers
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inter-Warehouse Stock Transfer Modal (Teammate 3 - Feature 1) -->
+    <div id="transferStockModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Inter-Warehouse Stock Transfer</h3>
+                <button id="closeTransferModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                    Safely rebalance inventory by transferring stock units between regional warehouses with atomic transactional integrity:
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label" for="transferItemSelect">Select Catalog Item to Transfer</label>
+                    <select id="transferItemSelect" class="form-select">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="form-group">
+                        <label class="form-label" for="transferSourceSelect">Source Warehouse (Origin)</label>
+                        <select id="transferSourceSelect" class="form-select">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="transferDestSelect">Destination Warehouse (Target)</label>
+                        <select id="transferDestSelect" class="form-select">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="rate-preview-box" style="margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Available Source Stock:</span>
+                        <strong id="transferAvailableStockPreview" style="color: #34d399; font-size: 1rem;">150 units</strong>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="transferQuantity">Transfer Quantity (Units)</label>
+                    <input type="number" id="transferQuantity" class="form-input" value="10" min="1" step="1" required>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <button type="button" class="btn btn-outline btn-sm transfer-quick-btn" data-qty="5">+5 units</button>
+                    <button type="button" class="btn btn-outline btn-sm transfer-quick-btn" data-qty="10">+10 units</button>
+                    <button type="button" class="btn btn-outline btn-sm transfer-quick-btn" data-qty="25">+25 units</button>
+                    <button type="button" class="btn btn-outline btn-sm transfer-quick-btn" data-qty="50">+50 units</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitTransferBtn" class="btn btn-primary">
+                    <span>⇄</span> Execute Stock Transfer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Damaged Goods Modal (Teammate 3 - Feature 3) -->
+    <div id="logDamagedModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Log Damaged Goods into Quarantine</h3>
+                <button id="closeLogDamageModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="logDamageWarehouseSelect">Storage Warehouse Facility</label>
+                    <select id="logDamageWarehouseSelect" class="form-select">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="logDamageItemSelect">Compromised Catalog Item</label>
+                    <select id="logDamageItemSelect" class="form-select">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="form-group">
+                        <label class="form-label" for="logDamageQuantity">Damaged Quantity</label>
+                        <input type="number" id="logDamageQuantity" class="form-input" value="1" min="1" step="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="logDamageSeveritySelect">Damage Severity</label>
+                        <select id="logDamageSeveritySelect" class="form-select">
+                            <option value="Severe">Severe (Structural Compromise)</option>
+                            <option value="Moderate">Moderate (Packaging Defect)</option>
+                            <option value="Minor">Minor Cosmetic Defect</option>
+                            <option value="Total Loss">Total Loss (Scrap / Recycle)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="logDamageReasonSelect">Damage Reason / Root Cause</label>
+                    <select id="logDamageReasonSelect" class="form-select">
+                        <option value="Water damage during storage handling">Water damage / moisture in storage bay</option>
+                        <option value="Forklift puncture during high-bay pallet retrieval">Forklift puncture / impact during movement</option>
+                        <option value="Crushed box corner during pallet offloading">Crushed corner / stack pressure deformation</option>
+                        <option value="Adhesive failure / heat exposure in transit">Adhesive failure / heat exposure during transit</option>
+                        <option value="Dropped package during sorting">Dropped package during sorting & staging</option>
+                        <option value="Custom">Other / Custom Description...</option>
+                    </select>
+                </div>
+
+                <div id="logDamageCustomReasonGroup" class="form-group hidden">
+                    <label class="form-label" for="logDamageCustomReason">Specific Issue Description</label>
+                    <input type="text" id="logDamageCustomReason" class="form-input" placeholder="Detailed damage explanation...">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="logDamageLoggedBy">Logged By (Inspector / QA Staff)</label>
+                    <input type="text" id="logDamageLoggedBy" class="form-input" value="Marcus Vance (QA Lead)">
+                </div>
+
+                <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                    <input type="checkbox" id="logDamageDeductStock" checked style="width: 18px; height: 18px; cursor: pointer;">
+                    <label for="logDamageDeductStock" style="font-size: 0.825rem; color: var(--text-secondary); cursor: pointer; margin-bottom: 0;">
+                        <strong>Deduct immediately from active sellable stock</strong> so compromised items can never be resold.
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="logDamageNotes">Quarantine Isolation Notes</label>
+                    <textarea id="logDamageNotes" class="form-textarea" rows="2" placeholder="e.g. Locked in QA Quarantine Shelf Q-3..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitLogDamageBtn" class="btn btn-danger">
+                    <span>💥</span> Confirm Quarantine Isolation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Expired Batch Modal (Teammate 3 - Feature 3) -->
+    <div id="logExpiredModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Log Expired Batch into Quarantine</h3>
+                <button id="closeLogExpiryModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="logExpiryWarehouseSelect">Storage Warehouse Facility</label>
+                    <select id="logExpiryWarehouseSelect" class="form-select">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="logExpiryItemSelect">Expired Catalog Item</label>
+                    <select id="logExpiryItemSelect" class="form-select">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="form-group">
+                        <label class="form-label" for="logExpiryLotNumber">Batch / Lot Number</label>
+                        <input type="text" id="logExpiryLotNumber" class="form-input" placeholder="e.g. LOT-FRG-2025-08" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="logExpiryQuantity">Expired Quantity</label>
+                        <input type="number" id="logExpiryQuantity" class="form-input" value="5" min="1" step="1" required>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="form-group">
+                        <label class="form-label" for="logExpiryDate">Expiration Date</label>
+                        <input type="date" id="logExpiryDate" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="logExpiryLoggedBy">Compliance Inspector</label>
+                        <input type="text" id="logExpiryLoggedBy" class="form-input" value="Elena Rostova (Compliance QA)">
+                    </div>
+                </div>
+
+                <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                    <input type="checkbox" id="logExpiryDeductStock" checked style="width: 18px; height: 18px; cursor: pointer;">
+                    <label for="logExpiryDeductStock" style="font-size: 0.825rem; color: var(--text-secondary); cursor: pointer; margin-bottom: 0;">
+                        <strong>Deduct immediately from active sellable stock</strong> to enforce expiration quarantine.
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="logExpiryNotes">Quarantine Notes</label>
+                    <textarea id="logExpiryNotes" class="form-textarea" rows="2" placeholder="e.g. Adhesive shelf life expired. Quarantined in shelf E-9..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitLogExpiryBtn" class="btn btn-warning" style="background: #d97706; border-color: #d97706; color: #fff;">
+                    <span>⏳</span> Enforce Expiry Quarantine
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advance Quarantine Status / Disposal Modal (Teammate 3 - Feature 3) -->
+    <div id="advanceQuarantineModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title">Manage Quarantined Lot: <span id="advQuarantineTitle">Record #1</span></h3>
+                <button id="closeAdvanceQuarantineModalBtn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="order-details-grid" style="margin-bottom: 1.25rem;">
+                    <div>
+                        <div class="detail-label">Item & Category</div>
+                        <div id="advQuarantineItemName" class="detail-val">Thermal Bubble Wrap</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Warehouse Depot</div>
+                        <div id="advQuarantineWarehouseName" class="detail-val">North Central Hub</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Quarantined Qty</div>
+                        <div id="advQuarantineQty" class="detail-val" style="color: var(--accent-danger); font-weight: 700;">4 units</div>
+                    </div>
+                    <div>
+                        <div class="detail-label">Current Status</div>
+                        <div id="advQuarantineCurrentStatus" class="detail-val" style="color: var(--accent-warning);">Quarantined</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="advQuarantineNextStatus">Target Lifecycle Status</label>
+                    <select id="advQuarantineNextStatus" class="form-select">
+                        <option value="Quarantined">Quarantined (Locked in QA bay)</option>
+                        <option value="Written Off">Written Off (Decommissioned / Approved for Loss)</option>
+                        <option value="Disposed">Disposed (Recycled or Destroyed)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="advQuarantineNotes">Disposal / Status Update Notes</label>
+                    <textarea id="advQuarantineNotes" class="form-textarea" rows="3" placeholder="Enter disposal certificate ID, recycling vendor, or write-off audit reason..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="submitAdvanceQuarantineBtn" class="btn btn-primary">Update Quarantine Status</button>
             </div>
         </div>
     </div>
