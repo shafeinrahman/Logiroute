@@ -32,7 +32,7 @@
   customers (e.g. Alice Johnson, Bob Martinez, Charlie Davis, Diana Prince, Evan Wright, Fiona
   Gallagher) for fast evaluation.
 
-  #### B. Customer Dashboard (Features.md - Teammate 1, Feature 3)
+  #### B. Customer Dashboard (Features.md - Tanvir's, Feature 3)
 
   • Store Credit Balance Card: Displays live store credit (store_credit_balance) automatically
   updated through returns.

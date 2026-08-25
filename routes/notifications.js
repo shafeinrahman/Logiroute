@@ -131,7 +131,7 @@ router.get('/stats', async (req, res) => {
 
 // ============================================================================
 // 3. POST /api/notifications/simulate - Text & Email Notification Simulator
-// (Features.md - Teammate 2, Feature 3 & Technical Manual F11)
+// (Features.md - Moin's, Feature 3 & Technical Manual F11)
 // ============================================================================
 router.post('/simulate', async (req, res) => {
     const { order_id, channel, message_payload, recipient } = req.body;

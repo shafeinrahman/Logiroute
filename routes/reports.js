@@ -5,7 +5,7 @@ const { items, customers, orders, orderItems, notifications } = require('./dataS
 
 // ============================================================================
 // 1. GET /api/reports/missing-sales
-// FEATURE: Missing Sales Report (Features.md - Teammate 1, Feature 1)
+// FEAT: Missing Sales Report
 // Join Customer with Items (via Orders / Order_Items) to find customers who
 // have NEVER bought a given item or category.
 // Tables: Customer, Orders, Order_Items, Items
@@ -14,7 +14,7 @@ router.get('/missing-sales', async (req, res) => {
     const { item_id, search } = req.query;
 
     try {
-        // 1. Fetch available items for selector
+        // 1. Fetching the available items for selector
         const [allItems] = await pool.promise().query(
             'SELECT item_id, name, sku, safety_threshold FROM Items ORDER BY item_id ASC'
         );
@@ -37,7 +37,7 @@ router.get('/missing-sales', async (req, res) => {
         // 2. Query Customers who have NEVER purchased this item (Missing Sales)
         // Direct relational subquery using Customer NOT IN (Orders ⋈ Order_Items WHERE item_id = ?)
         let missingSql = `
-            SELECT 
+            SELECT
                 c.customer_id,
                 c.name AS customer_name,
                 c.phone_number,
@@ -69,7 +69,7 @@ router.get('/missing-sales', async (req, res) => {
 
         // 3. Query Customers who HAVE purchased this item (for cross-validation)
         const [purchasedRows] = await pool.promise().query(`
-            SELECT 
+            SELECT
                 c.customer_id,
                 c.name AS customer_name,
                 c.phone_number,
@@ -182,9 +182,9 @@ router.get('/missing-sales', async (req, res) => {
 
         if (search && search.trim()) {
             const s = search.trim().toLowerCase();
-            missingList = missingList.filter(c => 
-                c.customer_name.toLowerCase().includes(s) || 
-                c.phone_number.includes(s) || 
+            missingList = missingList.filter(c =>
+                c.customer_name.toLowerCase().includes(s) ||
+                c.phone_number.includes(s) ||
                 c.address.toLowerCase().includes(s)
             );
         }
@@ -219,7 +219,7 @@ router.get('/missing-sales/matrix', async (req, res) => {
     try {
         const [itemsList] = await pool.promise().query('SELECT item_id, name, sku FROM Items ORDER BY item_id ASC');
         const [customersList] = await pool.promise().query('SELECT customer_id, name, phone_number, address FROM Customer ORDER BY customer_id ASC');
-        
+
         // Purchase records
         const [purchaseRecords] = await pool.promise().query(`
             SELECT DISTINCT o.customer_id, oi.item_id, SUM(oi.quantity) AS total_qty

@@ -203,7 +203,7 @@ CREATE TABLE Defective_Inventory (
 ) ENGINE=InnoDB;
 
 -- ============================================================================
--- 12. Table: Damaged_Inventory (Features.md Teammate 3 - Feature 3: Goods Monitoring)
+-- 12. Table: Damaged_Inventory (Features.md Shafein's - Feature 3: Goods Monitoring)
 -- Quarantined physically compromised goods isolated from sellable inventory
 -- ============================================================================
 CREATE TABLE Damaged_Inventory (
@@ -228,7 +228,7 @@ CREATE TABLE Damaged_Inventory (
 ) ENGINE=InnoDB;
 
 -- ============================================================================
--- 13. Table: Expired_Inventory (Features.md Teammate 3 - Feature 3: Goods Monitoring)
+-- 13. Table: Expired_Inventory (Features.md Shafein's - Feature 3: Goods Monitoring)
 -- Quarantined time-sensitive inventory past expiration threshold
 -- ============================================================================
 CREATE TABLE Expired_Inventory (
@@ -253,7 +253,7 @@ CREATE TABLE Expired_Inventory (
 ) ENGINE=InnoDB;
 
 -- ============================================================================
--- 14. View: Quarantined_Goods_View (Features.md Teammate 3 - Feature 3)
+-- 14. View: Quarantined_Goods_View (Features.md Shafein's - Feature 3)
 -- Unified reporting view over damaged_inventory and expired_inventory
 -- ============================================================================
 CREATE OR REPLACE VIEW Quarantined_Goods_View AS
@@ -451,13 +451,13 @@ INSERT INTO Defective_Inventory (warehouse_id, item_id, quarantine_reason, date_
 (1, 2, 'Water damage during storage handling', '2026-08-13'),
 (2, 3, 'Adhesive failure / heat exposure in transit', '2026-08-14');
 
--- Damaged Inventory (Features.md Teammate 3 - Feature 3: Goods Monitoring)
+-- Damaged Inventory (Features.md Shafein's - Feature 3: Goods Monitoring)
 INSERT INTO Damaged_Inventory (damage_id, warehouse_id, item_id, quantity, damage_reason, severity, quarantine_status, date_logged, logged_by, notes) VALUES
 (1, 1, 2, 4, 'Water leak in storage aisle 4B resulting in degraded bubble cells', 'Severe', 'Quarantined', '2026-08-13', 'Marcus Vance (QA Lead)', 'Locked in Bay Q1; cannot be resold.'),
 (2, 2, 3, 6, 'Adhesive degradation and heat deformation during transit dock unload', 'Moderate', 'Quarantined', '2026-08-14', 'Rachel Green (Inventory Inspector)', 'Tapes lost cohesion; quarantine tag #DMG-8821.'),
 (3, 4, 1, 10, 'Forklift puncture during high-bay pallet retrieval', 'Total Loss', 'Written Off', '2026-08-11', 'Kevin Chang (Floor Supervisor)', 'Crushed corner structural integrity compromised. Written off for recycling.');
 
--- Expired Inventory (Features.md Teammate 3 - Feature 3: Goods Monitoring)
+-- Expired Inventory (Features.md Shafein's - Feature 3: Goods Monitoring)
 INSERT INTO Expired_Inventory (expiry_id, warehouse_id, item_id, batch_lot_number, quantity, expiration_date, quarantine_status, date_logged, logged_by, notes) VALUES
 (1, 3, 5, 'LOT-FRG-2025-08A', 15, '2026-08-01', 'Quarantined', '2026-08-10', 'Elena Rostova (Compliance QA)', 'Adhesive backing shelf-life exceeded. Barcode scanning test failed.'),
 (2, 1, 7, 'LOT-STR-2025-07B', 8, '2026-07-28', 'Quarantined', '2026-08-12', 'Marcus Vance (QA Lead)', 'Tensile elasticity below ASTM packaging standard. Quarantined in shelf E-9.');

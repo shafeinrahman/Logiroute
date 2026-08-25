@@ -125,7 +125,7 @@ router.get('/kpis', async (req, res) => {
 
 // ============================================================================
 // 3. GET /api/drivers/coverage-map
-// FEATURE: Driver–Warehouse Coverage Map (Features.md - Teammate 2, Feature 1)
+// FEATURE: Driver–Warehouse Coverage Map (Features.md - Moin's, Feature 1)
 // Join drivers with warehouses on location_zone to show which drivers can realistically service which warehouse.
 // Tables: drivers, warehouses
 // ============================================================================
@@ -489,7 +489,7 @@ router.get('/:driverId/paychecks', async (req, res) => {
 
 // ============================================================================
 // 9. GET /api/drivers/:driverId/weekly-calculation
-// FEATURE: Driver Earnings (Features.md - Teammate 2, Feature 2)
+// FEATURE: Driver Earnings (Features.md - Moin's, Feature 2)
 // Weekly paycheck calculation: base_rate per trip plus per_km_bonus × distance_miles,
 // summed from trips into paycheck.
 // ============================================================================

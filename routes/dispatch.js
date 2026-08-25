@@ -90,7 +90,7 @@ router.get('/summary', async (req, res) => {
 
 // ============================================================================
 // 2. GET /api/dispatch/batches - Pending Orders Grouped by Location Zone
-// FEATURE: Delivery Zone Grouper (Features.md - Teammate 2, Feature 3)
+// FEATURE: Delivery Zone Grouper (Features.md - Moin's, Feature 3)
 // ============================================================================
 router.get('/batches', async (req, res) => {
     try {
@@ -330,7 +330,7 @@ router.get('/orders', async (req, res) => {
 
 // ============================================================================
 // 4. POST /api/dispatch/assign
-// FEATURE: Order Dispatch & Notification (Features.md - Teammate 2, Feature 3)
+// FEATURE: Order Dispatch & Notification (Features.md - Moin's, Feature 3)
 // Assign a driver to a group of orders:
 // 1. Set orders.driver_id = driverId
 // 2. Flip order_status to "Out for Delivery"

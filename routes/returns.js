@@ -53,7 +53,7 @@ function getWorkflowMeta(status) {
 
 // ============================================================================
 // 1. GET /api/returns - List All Returns with Order, Customer & Item Joins
-// FEATURE: Return Tracking (Features.md - Teammate 1, Feature 2)
+// FEATURE: Return Tracking
 // Tables: Returns, Orders, Customer, Order_Items, Items
 // ============================================================================
 router.get('/', async (req, res) => {
@@ -61,7 +61,7 @@ router.get('/', async (req, res) => {
 
     try {
         let sql = `
-            SELECT 
+            SELECT
                 r.return_id,
                 r.status,
                 r.refund_amount,
@@ -210,7 +210,7 @@ router.get('/', async (req, res) => {
 
         if (search && search.trim()) {
             const s = search.trim().toLowerCase();
-            filtered = filtered.filter(r => 
+            filtered = filtered.filter(r =>
                 r.customer_name.toLowerCase().includes(s) ||
                 r.customer_phone.includes(s) ||
                 r.address.toLowerCase().includes(s) ||
@@ -235,7 +235,7 @@ router.get('/', async (req, res) => {
 router.get('/kpis', async (req, res) => {
     try {
         const [statsRows] = await pool.promise().query(`
-            SELECT 
+            SELECT
                 COUNT(*) AS total_returns,
                 SUM(CASE WHEN status = 'Return Initiated' THEN 1 ELSE 0 END) AS initiated_count,
                 SUM(CASE WHEN status = 'Mailed Back' THEN 1 ELSE 0 END) AS mailed_back_count,
@@ -269,7 +269,7 @@ router.get('/kpis', async (req, res) => {
         const mailedBackCount = returns.filter(r => r.status === 'Mailed Back').length;
         const arrivedWarehouseCount = returns.filter(r => r.status === 'Arrived at Warehouse').length;
         const approvedCount = returns.filter(r => ['Refund Approved', 'Refund Credited', 'Completed'].includes(r.status)).length;
-        
+
         const totalRefundVolume = returns.reduce((sum, r) => sum + (parseFloat(r.refund_amount) || 0), 0);
         const creditedRefundTotal = returns
             .filter(r => ['Refund Approved', 'Refund Credited', 'Completed'].includes(r.status))
@@ -300,7 +300,7 @@ router.get('/:returnId', async (req, res) => {
 
     try {
         const [rows] = await pool.promise().query(
-            `SELECT 
+            `SELECT
                 r.return_id,
                 r.status,
                 r.refund_amount,
@@ -422,7 +422,7 @@ router.post('/', async (req, res) => {
 
     try {
         const [ordRows] = await pool.promise().query(
-            `SELECT o.order_id, o.customer_id, c.name AS customer_name, c.phone_number 
+            `SELECT o.order_id, o.customer_id, c.name AS customer_name, c.phone_number
              FROM Orders o
              JOIN Customer c ON o.customer_id = c.customer_id
              WHERE o.order_id = ?`,

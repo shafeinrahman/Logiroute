@@ -5,7 +5,7 @@ const { authMiddleware } = require('./auth');
 const { customers, orders, orderItems, items, returns, drivers } = require('./dataStore');
 
 // ============================================================================
-// FEATURE: Customer Dashboard (Features.md - Teammate 1, Feature 3)
+// FEATURE: Customer Dashboard
 // Pulls customer order history, star ratings, and store credit balance into a unified view.
 // ============================================================================
 router.get('/dashboard', authMiddleware, async (req, res) => {
@@ -25,7 +25,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
 
         // 2. Fetch Orders with assigned Driver information
         const [orderRows] = await pool.promise().query(
-            `SELECT o.order_id, o.order_status, o.shipping_type, o.zip_code, o.address, 
+            `SELECT o.order_id, o.order_status, o.shipping_type, o.zip_code, o.address,
                     o.star_rating, o.review_comment, o.customer_id, o.driver_id,
                     d.full_name AS driver_name, d.rating AS driver_rating
              FROM Orders o

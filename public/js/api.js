@@ -197,7 +197,7 @@ const api = {
     },
 
     // =========================================================================
-    // Driver Earnings & Payroll Endpoints (Teammate 2 - Feature 2)
+    // Driver Earnings & Payroll Endpoints (Moin's - Feature 2)
     // =========================================================================
     async getDrivers() {
         return this.request('/drivers');
@@ -242,7 +242,7 @@ const api = {
     },
 
     // =========================================================================
-    // Driver–Warehouse Coverage Map (Teammate 2 - Feature 1)
+    // Driver–Warehouse Coverage Map (Moin's - Feature 1)
     // =========================================================================
     async getCoverageMap(zone = 'all') {
         const qs = zone && zone !== 'all' ? `?zone=${encodeURIComponent(zone)}` : '';
@@ -261,7 +261,7 @@ const api = {
     },
 
     // =========================================================================
-    // Order Dispatch & Priority Queue (Teammate 2 - Feature 3)
+    // Order Dispatch & Priority Queue (Moin's - Feature 3)
     // =========================================================================
     async getDispatchSummary() {
         return this.request('/dispatch/summary');
@@ -305,7 +305,7 @@ const api = {
     },
 
     // =========================================================================
-    // Notification Queue & SMS/Email Alerts (Teammate 2 - Feature 3)
+    // Notification Queue & SMS/Email Alerts (Moin's - Feature 3)
     // =========================================================================
     async getNotifications(filters = {}) {
         const params = new URLSearchParams();
@@ -328,7 +328,7 @@ const api = {
     },
 
     // =========================================================================
-    // Item–Warehouse Stock Matrix Endpoints (Teammate 3 - Feature 1)
+    // Item–Warehouse Stock Matrix Endpoints (Shafein's - Feature 1)
     // =========================================================================
     async getStockMatrix(warehouseId = 'all', severity = 'all', search = '') {
         const params = new URLSearchParams();
@@ -355,7 +355,7 @@ const api = {
     },
 
     // =========================================================================
-    // Low Stock Alert & Inventory Endpoints (Teammate 3 - Feature 2)
+    // Low Stock Alert & Inventory Endpoints (Shafein's - Feature 2)
     // =========================================================================
     async getLowStockAlerts(warehouseId = 'all', severity = 'all') {
         const params = new URLSearchParams();
@@ -388,7 +388,7 @@ const api = {
     },
 
     // =========================================================================
-    // Goods Monitoring & Quarantine Control Endpoints (Teammate 3 - Feature 3)
+    // Goods Monitoring & Quarantine Control Endpoints (Shafein's - Feature 3)
     // =========================================================================
     async getGoodsMonitoring(filters = {}) {
         const params = new URLSearchParams();
@@ -426,7 +426,7 @@ const api = {
     },
 
     // =========================================================================
-    // Return Tracking Endpoints (Teammate 1 - Feature 2)
+    // Return Tracking Endpoints (Tanvir's - Feature 2)
     // =========================================================================
     async getReturns(filters = {}) {
         const params = new URLSearchParams();
@@ -463,7 +463,7 @@ const api = {
     },
 
     // =========================================================================
-    // Missing Sales Report Endpoints (Teammate 1 - Feature 1)
+    // Missing Sales Report Endpoints (Tanvir's - Feature 1)
     // =========================================================================
     async getMissingSalesReport(itemId = null, search = '') {
         const params = new URLSearchParams();

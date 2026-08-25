@@ -1141,14 +1141,6 @@ body {
   box-shadow: var(--shadow-md);
 }
 
-.alert-card.critical-border {
-  border-left: 4px solid var(--accent-danger);
-}
-
-.alert-card.warning-border {
-  border-left: 4px solid var(--accent-warning);
-}
-
 .alert-card-top {
   display: flex;
   justify-content: space-between;
@@ -1553,11 +1545,6 @@ body {
   position: relative;
 }
 
-.queue-card.queue-express {
-  border-left: 4px solid var(--accent-danger);
-  background: linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, var(--bg-card) 100%);
-}
-
 .queue-card:hover {
   border-color: var(--border-focus);
 }
@@ -1702,7 +1689,7 @@ body {
 }
 
 /* ==========================================================================
-   Return Tracking & Workflow Module Styles (Teammate 1 - Feature 2)
+   Return Tracking & Workflow Module Styles (Tanvir's - Feature 2)
    ========================================================================== */
 
 .returns-grid {
@@ -1880,7 +1867,7 @@ body {
 }
 
 /* ==========================================================================
-   Missing Sales Report & Penetration Analysis (Teammate 1 - Feature 1)
+   Missing Sales Report & Penetration Analysis (Tanvir's - Feature 1)
    ========================================================================== */
 
 .item-pills-scroll {
@@ -2087,7 +2074,7 @@ body {
 }
 
 /* ==========================================================================
-   Teammate 3: Item-Warehouse Stock Matrix (2D Pivot Grid & Controls)
+   Shafein's: Item-Warehouse Stock Matrix (2D Pivot Grid & Controls)
    ========================================================================== */
 
 .stock-matrix-table-container {
@@ -2267,7 +2254,7 @@ body {
 }
 
 /* ==========================================================================
-   Teammate 3: Goods Monitoring & Quarantine Control
+   Shafein's: Goods Monitoring & Quarantine Control
    ========================================================================== */
 
 .quarantine-alert-banner {
@@ -2574,7 +2561,3 @@ body {
   border-color: #a78bfa;
   color: #ffffff;
 }
-
-
-
-

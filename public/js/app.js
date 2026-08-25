@@ -36,13 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedQueueDriverId = null;
     let activeQuickDispatchOrder = null;
 
-    // Return Tracking Module State (Teammate 1 - Feature 2)
+    // Return Tracking Module State (Tanvir's - Feature 2)
     let returnsModuleList = [];
     let returnKPIs = null;
     let currentReturnsView = 'pipeline'; // 'pipeline' | 'table'
     let activeAdvanceReturnTarget = null;
 
-    // Missing Sales Report Module State (Teammate 1 - Feature 1)
+    // Missing Sales Report Module State (Tanvir's - Feature 1)
     let missingSalesData = null;
     let missingSalesMatrixData = null;
     let selectedMissingSalesItemId = null;
@@ -62,13 +62,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeRestockTarget = { warehouse_id: 1, item_id: 1, current_stock: 0, safety_threshold: 10, item_name: '', warehouse_name: '' };
     let activeThresholdTarget = { item_id: 1, item_name: '', safety_threshold: 10 };
 
-    // Stock Matrix State (Teammate 3 - Feature 1)
+    // Stock Matrix State (Shafein's - Feature 1)
     let stockMatrixPivotData = null;
     let stockMatrixFlatData = [];
     let stockMatrixKPIs = null;
     let currentMatrixView = 'pivot'; // 'pivot' | 'list'
 
-    // Goods Monitoring State (Teammate 3 - Feature 3)
+    // Goods Monitoring State (Shafein's - Feature 3)
     let goodsMonitoringRecords = [];
     let goodsMonitoringKPIs = null;
     let currentGmTypeFilter = 'all'; // 'all' | 'damaged' | 'expired'
@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const simNotifMessage = document.getElementById('simNotifMessage');
     const submitSimulateNotifBtn = document.getElementById('submitSimulateNotifBtn');
 
-    // Return Tracking Elements (Teammate 1 - Feature 2)
+    // Return Tracking Elements (Tanvir's - Feature 2)
     const retKpiTotal = document.getElementById('retKpiTotal');
     const retKpiMailedBack = document.getElementById('retKpiMailedBack');
     const retKpiAtWarehouse = document.getElementById('retKpiAtWarehouse');
@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeAdvanceReturnModalBtn = document.getElementById('closeAdvanceReturnModalBtn');
     const submitAdvanceReturnBtn = document.getElementById('submitAdvanceReturnBtn');
 
-    // Missing Sales Report Elements (Teammate 1 - Feature 1)
+    // Missing Sales Report Elements (Tanvir's - Feature 1)
     const msKpiTotalCustomers = document.getElementById('msKpiTotalCustomers');
     const msKpiPenetrationRate = document.getElementById('msKpiPenetrationRate');
     const msKpiMissingCount = document.getElementById('msKpiMissingCount');
@@ -1039,7 +1039,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // =========================================================================
-    // MODULE 2: DRIVER EARNINGS & PAYROLL (Teammate 2 - Feature 2)
+    // MODULE 2: DRIVER EARNINGS & PAYROLL (Moin's - Feature 2)
     // =========================================================================
     async function loadDriverEarningsModule() {
         try {
@@ -1292,7 +1292,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // =========================================================================
-    // MODULE: DRIVER–WAREHOUSE COVERAGE MAP (Teammate 2 - Feature 1)
+    // MODULE: DRIVER–WAREHOUSE COVERAGE MAP (Moin's - Feature 1)
     // =========================================================================
     async function loadCoverageMapModule() {
         try {
@@ -1506,7 +1506,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // =========================================================================
-    // MODULE: ORDER DISPATCH & PRIORITY QUEUE (Teammate 2 - Feature 3)
+    // MODULE: ORDER DISPATCH & PRIORITY QUEUE (Moin's - Feature 3)
     // =========================================================================
     async function loadDispatchModule() {
         try {
@@ -1919,7 +1919,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // MODULE: NOTIFICATIONS & SIMULATOR (Teammate 2 - Feature 3)
+    // MODULE: NOTIFICATIONS & SIMULATOR (Moin's - Feature 3)
     // =========================================================================
     async function loadNotificationsModule() {
         try {
@@ -2066,7 +2066,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // =========================================================================
-    // MODULE: LOW STOCK ALERT & INVENTORY (Teammate 3 - Feature 2)
+    // MODULE: LOW STOCK ALERT & INVENTORY (Shafein's - Feature 2)
     // =========================================================================
     async function loadInventoryModule() {
         try {
@@ -2384,7 +2384,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // MODULE: RETURN TRACKING & WORKFLOW CONSOLE (Teammate 1 - Feature 2)
+    // MODULE: RETURN TRACKING & WORKFLOW CONSOLE (Tanvir's - Feature 2)
     // =========================================================================
     async function loadReturnsModule() {
         try {
@@ -2761,7 +2761,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // =========================================================================
-    // MODULE: MISSING SALES REPORT & PENETRATION (Teammate 1 - Feature 1)
+    // MODULE: MISSING SALES REPORT & PENETRATION (Tanvir's - Feature 1)
     // =========================================================================
     async function loadMissingSalesModule() {
         try {
@@ -3044,7 +3044,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // =========================================================================
-    // MODULE: ITEM–WAREHOUSE STOCK MATRIX (Teammate 3 - Feature 1)
+    // MODULE: ITEM–WAREHOUSE STOCK MATRIX (Shafein's - Feature 1)
     // Join Items with Warehouses (via Warehouse_Stocks)
     // =========================================================================
 
@@ -3497,7 +3497,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // =========================================================================
-    // MODULE: GOODS MONITORING & QUARANTINE CONTROL (Teammate 3 - Feature 3)
+    // MODULE: GOODS MONITORING & QUARANTINE CONTROL (Shafein's - Feature 3)
     // Report/insert view over Damaged_Inventory and Expired_Inventory
     // Quarantined stock can NEVER be resold or dispatched to orders
     // =========================================================================

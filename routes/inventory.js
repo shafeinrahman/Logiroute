@@ -12,7 +12,7 @@ function determineSeverity(stockQuantity, safetyThreshold) {
 
 // ============================================================================
 // ============================================================================
-// SECTION 1: ITEM–WAREHOUSE STOCK MATRIX (Features.md Teammate 3 - Feature 1)
+// SECTION 1: ITEM–WAREHOUSE STOCK MATRIX (Features.md Shafein's - Feature 1)
 // Join Items with Warehouses (via Warehouse_Stocks) to show full stock distribution
 // Tables: items, warehouses, warehouse_stocks
 // ============================================================================
@@ -521,7 +521,7 @@ router.post('/transfer', async (req, res) => {
 
 // ============================================================================
 // ============================================================================
-// SECTION 2: LOW STOCK ALERT (Features.md Teammate 3 - Feature 2)
+// SECTION 2: LOW STOCK ALERT (Features.md Shafein's - Feature 2)
 // Query warehouse_stocks where stock_quantity is below item's safety_threshold
 // Tables: warehouse_stocks, items, warehouses
 // ============================================================================
@@ -816,7 +816,7 @@ router.put('/items/:itemId/threshold', async (req, res) => {
 
 // ============================================================================
 // ============================================================================
-// SECTION 3: GOODS MONITORING & QUARANTINE CONTROL (Features.md Teammate 3 - Feature 3)
+// SECTION 3: GOODS MONITORING & QUARANTINE CONTROL (Features.md Shafein's - Feature 3)
 // Report/insert view over damaged_inventory and expired_inventory so quarantined
 // stock can NEVER be resold or dispatched to customer orders.
 // Tables: Damaged_Inventory, Expired_Inventory, Quarantined_Goods_View
