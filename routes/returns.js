@@ -141,6 +141,7 @@ router.get('/', async (req, res) => {
         });
     } catch (err) {
         console.error('Returns query fallback:', err.message);
+            return res.status(500).json({ success: false, message: 'Failed to fetch return KPIs' });
 
         let filtered = returns.map(r => {
             const ord = orders.find(o => o.order_id === r.order_id) || {
@@ -234,31 +235,35 @@ router.get('/', async (req, res) => {
 // ============================================================================
 router.get('/kpis', async (req, res) => {
     try {
-        const [statsRows] = await pool.promise().query(`
-            SELECT
-                COUNT(*) AS total_returns,
-                SUM(CASE WHEN status = 'Return Initiated' THEN 1 ELSE 0 END) AS initiated_count,
-                SUM(CASE WHEN status = 'Mailed Back' THEN 1 ELSE 0 END) AS mailed_back_count,
-                SUM(CASE WHEN status = 'Arrived at Warehouse' THEN 1 ELSE 0 END) AS arrived_warehouse_count,
-                SUM(CASE WHEN status IN ('Refund Approved', 'Refund Credited', 'Completed') THEN 1 ELSE 0 END) AS approved_count,
-                COALESCE(SUM(refund_amount), 0) AS total_refund_volume,
-                COALESCE(SUM(CASE WHEN status IN ('Refund Approved', 'Refund Credited', 'Completed') THEN refund_amount ELSE 0 END), 0) AS credited_refund_total,
-                COALESCE(SUM(CASE WHEN status NOT IN ('Refund Approved', 'Refund Credited', 'Completed') THEN refund_amount ELSE 0 END), 0) AS pending_refund_total
-            FROM Returns
-        `);
+        const [rows] = await pool.promise().query(
+            `SELECT status, refund_amount FROM Returns`
+        );
 
-        const stats = statsRows[0];
+        const APPROVED = ['Refund Approved', 'Refund Credited', 'Completed'];
+
+        const totalReturns = rows.length;
+        const initiatedCount = rows.filter(r => r.status === 'Return Initiated').length;
+        const mailedBackCount = rows.filter(r => r.status === 'Mailed Back').length;
+        const arrivedWarehouseCount = rows.filter(r => r.status === 'Arrived at Warehouse').length;
+        const approvedCount = rows.filter(r => APPROVED.includes(r.status)).length;
+
+        const totalRefundVolume = rows.reduce((sum, r) => sum + (parseFloat(r.refund_amount) || 0), 0);
+        const creditedRefundTotal = rows
+            .filter(r => APPROVED.includes(r.status))
+            .reduce((sum, r) => sum + (parseFloat(r.refund_amount) || 0), 0);
+        const pendingRefundTotal = totalRefundVolume - creditedRefundTotal;
+
         return res.json({
             success: true,
             kpis: {
-                totalReturns: stats.total_returns || 0,
-                initiatedCount: stats.initiated_count || 0,
-                mailedBackCount: stats.mailed_back_count || 0,
-                arrivedWarehouseCount: stats.arrived_warehouse_count || 0,
-                approvedCount: stats.approved_count || 0,
-                totalRefundVolume: parseFloat(stats.total_refund_volume || 0).toFixed(2),
-                creditedRefundTotal: parseFloat(stats.credited_refund_total || 0).toFixed(2),
-                pendingRefundTotal: parseFloat(stats.pending_refund_total || 0).toFixed(2)
+                totalReturns,
+                initiatedCount,
+                mailedBackCount,
+                arrivedWarehouseCount,
+                approvedCount,
+                totalRefundVolume: totalRefundVolume.toFixed(2),
+                creditedRefundTotal: creditedRefundTotal.toFixed(2),
+                pendingRefundTotal: pendingRefundTotal.toFixed(2)
             }
         });
     } catch (err) {

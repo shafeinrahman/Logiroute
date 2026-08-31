@@ -45,7 +45,7 @@ router.get('/missing-sales', async (req, res) => {
                 c.store_credit_balance,
                 COUNT(DISTINCT o.order_id) AS total_orders_placed,
                 MAX(o.order_id) AS last_order_id,
-                COALESCE(SUM(oi.quantity), 0) AS total_lifetime_units_bought
+                SUM(oi.quantity) AS total_lifetime_units_bought
             FROM Customer c
             LEFT JOIN Orders o ON c.customer_id = o.customer_id
             LEFT JOIN Order_Items oi ON o.order_id = oi.order_id
@@ -101,6 +101,7 @@ router.get('/missing-sales', async (req, res) => {
                 ...r,
                 store_credit_balance: parseFloat(r.store_credit_balance || 0).toFixed(2),
                 total_orders_placed: parseInt(r.total_orders_placed, 10) || 0,
+                total_lifetime_units_bought: r.total_lifetime_units_bought || 0,
                 status: 'Never Purchased'
             })),
             purchasedCustomers: purchasedRows.map(r => ({
