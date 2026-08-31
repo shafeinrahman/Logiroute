@@ -21,70 +21,43 @@ function extractZone(address, zipCode) {
 router.get('/summary', async (req, res) => {
     try {
         const [pendingRows] = await pool.promise().query(
-            `SELECT 
-                COUNT(*) AS total_pending,
-                SUM(CASE WHEN shipping_type = 'Express' THEN 1 ELSE 0 END) AS express_pending,
-                SUM(CASE WHEN shipping_type = 'Standard' THEN 1 ELSE 0 END) AS standard_pending
-             FROM Orders WHERE order_status = 'Pending'`
+            `SELECT shipping_type FROM Orders WHERE order_status = 'Pending'`
         );
-
         const [activeRows] = await pool.promise().query(
-            `SELECT COUNT(*) AS out_for_delivery FROM Orders WHERE order_status IN ('Out for Delivery', 'Dispatched')`
+            `SELECT order_id FROM Orders WHERE order_status IN ('Out for Delivery', 'Dispatched')`
         );
-
         const [deliveredRows] = await pool.promise().query(
-            `SELECT COUNT(*) AS total_delivered FROM Orders WHERE order_status = 'Delivered'`
+            `SELECT order_id FROM Orders WHERE order_status = 'Delivered'`
         );
-
         const [driverRows] = await pool.promise().query(
-            `SELECT 
-                COUNT(*) AS total_drivers,
-                SUM(CASE WHEN status_flag = 'Available' THEN 1 ELSE 0 END) AS available_drivers,
-                SUM(CASE WHEN status_flag IN ('Busy', 'On Trip') THEN 1 ELSE 0 END) AS busy_drivers
-             FROM Drivers`
+            `SELECT status_flag FROM Drivers`
+        );
+        const [notifRows] = await pool.promise().query(
+            `SELECT notification_id FROM Notification_Queue`
         );
 
-        const [notifRows] = await pool.promise().query(
-            `SELECT COUNT(*) AS total_notifications FROM Notification_Queue`
-        );
+        const expressPending = pendingRows.filter(o => o.shipping_type === 'Express').length;
+        const standardPending = pendingRows.filter(o => o.shipping_type === 'Standard').length;
+        const availableDrivers = driverRows.filter(d => d.status_flag === 'Available').length;
+        const busyDrivers = driverRows.filter(d => ['Busy', 'On Trip'].includes(d.status_flag)).length;
 
         return res.json({
             success: true,
             summary: {
-                totalPendingOrders: pendingRows[0].total_pending || 0,
-                expressPending: pendingRows[0].express_pending || 0,
-                standardPending: pendingRows[0].standard_pending || 0,
-                outForDeliveryOrders: activeRows[0].out_for_delivery || 0,
-                totalDeliveredOrders: deliveredRows[0].total_delivered || 0,
-                totalDrivers: driverRows[0].total_drivers || 0,
-                availableDrivers: driverRows[0].available_drivers || 0,
-                busyDrivers: driverRows[0].busy_drivers || 0,
-                totalNotificationsLogged: notifRows[0].total_notifications || 0
+                totalPendingOrders: pendingRows.length,
+                expressPending,
+                standardPending,
+                outForDeliveryOrders: activeRows.length,
+                totalDeliveredOrders: deliveredRows.length,
+                totalDrivers: driverRows.length,
+                availableDrivers,
+                busyDrivers,
+                totalNotificationsLogged: notifRows.length
             }
         });
     } catch (err) {
-        console.error('Dispatch summary fallback:', err.message);
-        const pendingOrders = orders.filter(o => o.order_status === 'Pending');
-        const expressPending = pendingOrders.filter(o => o.shipping_type === 'Express').length;
-        const outForDelivery = orders.filter(o => ['Out for Delivery', 'Dispatched'].includes(o.order_status)).length;
-        const delivered = orders.filter(o => o.order_status === 'Delivered').length;
-        const availDrivers = drivers.filter(d => d.status_flag === 'Available').length;
-        const busyDrivers = drivers.filter(d => ['Busy', 'On Trip'].includes(d.status_flag)).length;
-
-        return res.json({
-            success: true,
-            summary: {
-                totalPendingOrders: pendingOrders.length,
-                expressPending,
-                standardPending: pendingOrders.length - expressPending,
-                outForDeliveryOrders: outForDelivery,
-                totalDeliveredOrders: delivered,
-                totalDrivers: drivers.length,
-                availableDrivers: availDrivers,
-                busyDrivers: busyDrivers,
-                totalNotificationsLogged: notifications.length
-            }
-        });
+        console.error('Dispatch summary error:', err.message);
+        return res.status(500).json({ success: false, message: 'Failed to fetch dispatch summary' });
     }
 });
 
@@ -94,36 +67,35 @@ router.get('/summary', async (req, res) => {
 // ============================================================================
 router.get('/batches', async (req, res) => {
     try {
-        const sql = `
-            SELECT 
-                w.location_zone,
-                w.warehouse_id,
-                w.name AS warehouse_name,
-                COUNT(o.order_id) AS pending_order_count,
-                SUM(CASE WHEN o.shipping_type = 'Express' THEN 1 ELSE 0 END) AS express_count,
-                SUM(CASE WHEN o.shipping_type = 'Standard' THEN 1 ELSE 0 END) AS standard_count
-            FROM Warehouses w
-            LEFT JOIN Orders o ON (o.address LIKE CONCAT('%', w.location_zone, '%') OR o.zip_code = CASE WHEN w.location_zone = 'North Zone' THEN '10001' WHEN w.location_zone = 'South Zone' THEN '10002' WHEN w.location_zone = 'East Zone' THEN '10003' WHEN w.location_zone = 'West Zone' THEN '10004' ELSE '' END) AND o.order_status = 'Pending'
-            GROUP BY w.location_zone, w.warehouse_id, w.name
-            ORDER BY pending_order_count DESC, express_count DESC
-        `;
-        const [batchRows] = await pool.promise().query(sql);
-
-        // Fetch available drivers per zone
+        const [warehouseRows] = await pool.promise().query(
+            `SELECT warehouse_id, name AS warehouse_name, location_zone FROM Warehouses`
+        );
+        const [pendingOrders] = await pool.promise().query(
+            `SELECT order_id, address, zip_code, shipping_type FROM Orders WHERE order_status = 'Pending'`
+        );
         const [driverRows] = await pool.promise().query(`
             SELECT driver_id, full_name, rating, base_rate, per_km_bonus, status_flag, location_zone
             FROM Drivers
             ORDER BY rating DESC
         `);
 
+        const batchRows = warehouseRows.map(w => {
+            const zoneOrders = pendingOrders.filter(o => extractZone(o.address, o.zip_code) === w.location_zone);
+            return {
+                location_zone: w.location_zone,
+                warehouse_id: w.warehouse_id,
+                warehouse_name: w.warehouse_name,
+                pending_order_count: zoneOrders.length,
+                express_count: zoneOrders.filter(o => o.shipping_type === 'Express').length,
+                standard_count: zoneOrders.filter(o => o.shipping_type === 'Standard').length
+            };
+        }).sort((a, b) => b.pending_order_count - a.pending_order_count || b.express_count - a.express_count);
+
         const batchesWithDrivers = batchRows.map(b => {
             const zoneDrivers = driverRows.filter(d => d.location_zone === b.location_zone);
             const availableZoneDrivers = zoneDrivers.filter(d => d.status_flag === 'Available');
             return {
                 ...b,
-                pending_order_count: parseInt(b.pending_order_count, 10) || 0,
-                express_count: parseInt(b.express_count, 10) || 0,
-                standard_count: parseInt(b.standard_count, 10) || 0,
                 assigned_drivers_count: zoneDrivers.length,
                 available_drivers_count: availableZoneDrivers.length,
                 available_drivers: availableZoneDrivers,
@@ -238,14 +210,17 @@ router.get('/orders', async (req, res) => {
             params.push(shipping_type);
         }
 
-        sql += ` ORDER BY 
-            CASE WHEN o.order_status = 'Pending' THEN 1 
-                 WHEN o.order_status IN ('Out for Delivery', 'Dispatched') THEN 2 
-                 ELSE 3 END ASC,
-            CASE WHEN o.shipping_type = 'Express' THEN 1 ELSE 2 END ASC,
-            o.order_id DESC`;
+        sql += ` ORDER BY o.order_id DESC`;
 
         const [orderRows] = await pool.promise().query(sql, params);
+
+        const statusPriority = s => s === 'Pending' ? 1 : (['Out for Delivery', 'Dispatched'].includes(s) ? 2 : 3);
+        const shipPriority = t => t === 'Express' ? 1 : 2;
+        orderRows.sort((a, b) =>
+            statusPriority(a.order_status) - statusPriority(b.order_status) ||
+            shipPriority(a.shipping_type) - shipPriority(b.shipping_type) ||
+            b.order_id - a.order_id
+        );
 
         let ordersWithItems = orderRows;
         if (orderRows.length > 0) {
@@ -601,10 +576,13 @@ router.get('/driver-queue/:driverId', async (req, res) => {
              FROM Orders o
              JOIN Customer c ON o.customer_id = c.customer_id
              WHERE o.driver_id = ? AND o.order_status IN ('Out for Delivery', 'Dispatched')
-             ORDER BY 
-                 CASE WHEN o.shipping_type = 'Express' THEN 1 ELSE 2 END,
-                 o.order_id ASC`,
+             ORDER BY o.order_id ASC`,
             [driverId]
+        );
+
+        orderRows.sort((a, b) =>
+            (a.shipping_type === 'Express' ? 1 : 2) - (b.shipping_type === 'Express' ? 1 : 2) ||
+            a.order_id - b.order_id
         );
 
         let queueWithItems = orderRows;

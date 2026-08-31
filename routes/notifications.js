@@ -89,43 +89,22 @@ router.get('/', async (req, res) => {
 // ============================================================================
 router.get('/stats', async (req, res) => {
     try {
-        const [statsRows] = await pool.promise().query(`
-            SELECT 
-                COUNT(*) AS total_notifications,
-                SUM(CASE WHEN channel = 'SMS' THEN 1 ELSE 0 END) AS sms_count,
-                SUM(CASE WHEN channel = 'Email' THEN 1 ELSE 0 END) AS email_count,
-                SUM(CASE WHEN dispatch_status = 'Delivered' THEN 1 ELSE 0 END) AS delivered_count,
-                SUM(CASE WHEN dispatch_status = 'Sent' THEN 1 ELSE 0 END) AS sent_count
-            FROM Notification_Queue
-        `);
+        const [rows] = await pool.promise().query(
+            `SELECT channel, dispatch_status FROM Notification_Queue`
+        );
 
-        return res.json({
-            success: true,
-            stats: statsRows[0] || {
-                total_notifications: 0,
-                sms_count: 0,
-                email_count: 0,
-                delivered_count: 0,
-                sent_count: 0
-            }
-        });
+        const stats = {
+            total_notifications: rows.length,
+            sms_count: rows.filter(n => n.channel === 'SMS').length,
+            email_count: rows.filter(n => n.channel === 'Email').length,
+            delivered_count: rows.filter(n => n.dispatch_status === 'Delivered').length,
+            sent_count: rows.filter(n => n.dispatch_status === 'Sent').length
+        };
+
+        return res.json({ success: true, stats });
     } catch (err) {
-        const total = notifications.length;
-        const smsCount = notifications.filter(n => n.channel === 'SMS').length;
-        const emailCount = notifications.filter(n => n.channel === 'Email').length;
-        const deliveredCount = notifications.filter(n => n.dispatch_status === 'Delivered').length;
-        const sentCount = notifications.filter(n => n.dispatch_status === 'Sent').length;
-
-        return res.json({
-            success: true,
-            stats: {
-                total_notifications: total,
-                sms_count: smsCount,
-                email_count: emailCount,
-                delivered_count: deliveredCount,
-                sent_count: sentCount
-            }
-        });
+        console.error('Notification stats error:', err.message);
+        return res.status(500).json({ success: false, message: 'Failed to fetch notification stats' });
     }
 });
 

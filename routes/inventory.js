@@ -23,34 +23,47 @@ router.get('/stock-matrix', async (req, res) => {
     const { warehouse_id, severity, search } = req.query;
 
     try {
-        const query = `
-            SELECT 
-                w.warehouse_id,
-                w.name AS warehouse_name,
-                w.location_zone,
-                i.item_id,
-                i.name AS item_name,
-                i.sku,
-                i.safety_threshold,
-                COALESCE(ws.stock_quantity, 0) AS stock_quantity,
-                (i.safety_threshold - COALESCE(ws.stock_quantity, 0)) AS deficit,
-                ROUND((COALESCE(ws.stock_quantity, 0) / i.safety_threshold) * 100, 1) AS stock_percentage,
-                CASE 
-                    WHEN COALESCE(ws.stock_quantity, 0) = 0 THEN 'Out of Stock'
-                    WHEN COALESCE(ws.stock_quantity, 0) <= (i.safety_threshold * 0.35) THEN 'Critical'
-                    WHEN COALESCE(ws.stock_quantity, 0) < i.safety_threshold THEN 'Low Stock'
-                    ELSE 'Healthy'
-                END AS stock_status,
-                (
-                    COALESCE((SELECT SUM(d.quantity) FROM Damaged_Inventory d WHERE d.warehouse_id = w.warehouse_id AND d.item_id = i.item_id AND d.quarantine_status = 'Quarantined'), 0) +
-                    COALESCE((SELECT SUM(e.quantity) FROM Expired_Inventory e WHERE e.warehouse_id = w.warehouse_id AND e.item_id = i.item_id AND e.quarantine_status = 'Quarantined'), 0)
-                ) AS quarantined_quantity
-            FROM Warehouses w
-            CROSS JOIN Items i
-            LEFT JOIN Warehouse_Stocks ws ON w.warehouse_id = ws.warehouse_id AND i.item_id = ws.item_id
-            ORDER BY w.warehouse_id ASC, i.item_id ASC
-        `;
-        const [rows] = await pool.promise().query(query);
+        const [warehouseRows] = await pool.promise().query(`SELECT warehouse_id, name AS warehouse_name, location_zone FROM Warehouses`);
+        const [itemRows] = await pool.promise().query(`SELECT item_id, name AS item_name, sku, safety_threshold FROM Items`);
+        const [stockRows] = await pool.promise().query(`SELECT warehouse_id, item_id, stock_quantity FROM Warehouse_Stocks`);
+        const [damagedRows] = await pool.promise().query(`SELECT warehouse_id, item_id, quantity FROM Damaged_Inventory WHERE quarantine_status = 'Quarantined'`);
+        const [expiredRows] = await pool.promise().query(`SELECT warehouse_id, item_id, quantity FROM Expired_Inventory WHERE quarantine_status = 'Quarantined'`);
+
+        const rows = [];
+        warehouseRows.forEach(w => {
+            itemRows.forEach(i => {
+                const stockRecord = stockRows.find(s => s.warehouse_id === w.warehouse_id && s.item_id === i.item_id);
+                const qty = stockRecord ? stockRecord.stock_quantity : 0;
+
+                let stock_status;
+                if (qty === 0) stock_status = 'Out of Stock';
+                else if (qty <= (i.safety_threshold * 0.35)) stock_status = 'Critical';
+                else if (qty < i.safety_threshold) stock_status = 'Low Stock';
+                else stock_status = 'Healthy';
+
+                const dmgQty = damagedRows
+                    .filter(d => d.warehouse_id === w.warehouse_id && d.item_id === i.item_id)
+                    .reduce((sum, d) => sum + (d.quantity || 0), 0);
+                const expQty = expiredRows
+                    .filter(e => e.warehouse_id === w.warehouse_id && e.item_id === i.item_id)
+                    .reduce((sum, e) => sum + (e.quantity || 0), 0);
+
+                rows.push({
+                    warehouse_id: w.warehouse_id,
+                    warehouse_name: w.warehouse_name,
+                    location_zone: w.location_zone,
+                    item_id: i.item_id,
+                    item_name: i.item_name,
+                    sku: i.sku,
+                    safety_threshold: i.safety_threshold,
+                    stock_quantity: qty,
+                    deficit: i.safety_threshold - qty,
+                    stock_percentage: Math.round((qty / i.safety_threshold) * 1000) / 10,
+                    stock_status,
+                    quarantined_quantity: dmgQty + expQty
+                });
+            });
+        });
 
         let filtered = rows;
         if (warehouse_id && warehouse_id !== 'all') {
@@ -333,30 +346,28 @@ router.get('/stock-matrix/pivot', async (req, res) => {
 // 1.3 GET /api/inventory/matrix/kpis - Stock Matrix KPIs
 router.get('/matrix/kpis', async (req, res) => {
     try {
-        const [itemRows] = await pool.promise().query('SELECT COUNT(*) as total_items FROM Items');
-        const [warehouseRows] = await pool.promise().query('SELECT COUNT(*) as total_warehouses FROM Warehouses');
-        const [stockRows] = await pool.promise().query('SELECT SUM(stock_quantity) as total_stock_units, COUNT(*) as stock_points FROM Warehouse_Stocks');
-        const [lowRows] = await pool.promise().query(`
-            SELECT 
-                COUNT(*) as total_low_stock_alerts,
-                SUM(CASE WHEN ws.stock_quantity = 0 THEN 1 ELSE 0 END) as out_of_stock_nodes,
-                SUM(CASE WHEN ws.stock_quantity <= (i.safety_threshold * 0.35) THEN 1 ELSE 0 END) as critical_alerts
+        const [itemCountRows] = await pool.promise().query('SELECT COUNT(*) as total_items FROM Items');
+        const [warehouseCountRows] = await pool.promise().query('SELECT COUNT(*) as total_warehouses FROM Warehouses');
+        const [stockRows] = await pool.promise().query('SELECT stock_quantity FROM Warehouse_Stocks');
+        const [lowStockRows] = await pool.promise().query(`
+            SELECT ws.stock_quantity, i.safety_threshold
             FROM Warehouse_Stocks ws
             JOIN Items i ON ws.item_id = i.item_id
             WHERE ws.stock_quantity < i.safety_threshold
         `);
-        const [quarantineRows] = await pool.promise().query(`
-            SELECT COALESCE(SUM(quantity), 0) as total_quarantined FROM (
-                SELECT quantity FROM Damaged_Inventory WHERE quarantine_status = 'Quarantined'
-                UNION ALL
-                SELECT quantity FROM Expired_Inventory WHERE quarantine_status = 'Quarantined'
-            ) q
-        `);
+        const [damagedRows] = await pool.promise().query(`SELECT quantity FROM Damaged_Inventory WHERE quarantine_status = 'Quarantined'`);
+        const [expiredRows] = await pool.promise().query(`SELECT quantity FROM Expired_Inventory WHERE quarantine_status = 'Quarantined'`);
 
-        const totalItems = itemRows[0]?.total_items || 0;
-        const totalWarehouses = warehouseRows[0]?.total_warehouses || 0;
-        const totalStockUnits = stockRows[0]?.total_stock_units || 0;
+        const totalItems = itemCountRows[0]?.total_items || 0;
+        const totalWarehouses = warehouseCountRows[0]?.total_warehouses || 0;
+        const totalStockUnits = stockRows.reduce((sum, s) => sum + (s.stock_quantity || 0), 0);
         const totalStoragePoints = totalItems * totalWarehouses;
+
+        const outOfStockNodes = lowStockRows.filter(r => r.stock_quantity === 0).length;
+        const criticalAlerts = lowStockRows.filter(r => r.stock_quantity <= (r.safety_threshold * 0.35)).length;
+        const totalQuarantinedUnits =
+            damagedRows.reduce((sum, d) => sum + (d.quantity || 0), 0) +
+            expiredRows.reduce((sum, e) => sum + (e.quantity || 0), 0);
 
         return res.json({
             success: true,
@@ -365,40 +376,15 @@ router.get('/matrix/kpis', async (req, res) => {
                 totalWarehouses: totalWarehouses,
                 totalStoragePoints: totalStoragePoints,
                 totalStockUnits: totalStockUnits,
-                totalLowStockAlerts: lowRows[0]?.total_low_stock_alerts || 0,
-                outOfStockNodes: lowRows[0]?.out_of_stock_nodes || 0,
-                criticalAlerts: lowRows[0]?.critical_alerts || 0,
-                totalQuarantinedUnits: parseInt(quarantineRows[0]?.total_quarantined || 0, 10)
+                totalLowStockAlerts: lowStockRows.length,
+                outOfStockNodes,
+                criticalAlerts,
+                totalQuarantinedUnits
             }
         });
     } catch (err) {
-        const totalItems = items.length;
-        const totalWarehouses = warehouses.length;
-        const totalStockUnits = warehouseStocks.reduce((sum, ws) => sum + ws.stock_quantity, 0);
-        const lowStockList = warehouseStocks.filter(ws => {
-            const it = items.find(i => i.item_id === ws.item_id);
-            return it && ws.stock_quantity < it.safety_threshold;
-        });
-
-        const dmgTotal = damagedInventory.filter(d => d.quarantine_status === 'Quarantined').reduce((sum, d) => sum + d.quantity, 0);
-        const expTotal = expiredInventory.filter(e => e.quarantine_status === 'Quarantined').reduce((sum, e) => sum + e.quantity, 0);
-
-        return res.json({
-            success: true,
-            kpis: {
-                totalCatalogItems: totalItems,
-                totalWarehouses: totalWarehouses,
-                totalStoragePoints: totalItems * totalWarehouses,
-                totalStockUnits: totalStockUnits,
-                totalLowStockAlerts: lowStockList.length,
-                outOfStockNodes: warehouseStocks.filter(ws => ws.stock_quantity === 0).length,
-                criticalAlerts: lowStockList.filter(ws => {
-                    const it = items.find(i => i.item_id === ws.item_id);
-                    return it && ws.stock_quantity <= (it.safety_threshold * 0.35);
-                }).length,
-                totalQuarantinedUnits: dmgTotal + expTotal
-            }
-        });
+        console.error('Matrix KPIs error:', err.message);
+        return res.status(500).json({ success: false, message: 'Failed to fetch matrix KPIs' });
     }
 });
 
@@ -636,62 +622,35 @@ router.get('/warehouses', async (req, res) => {
 // 2.3 GET /api/inventory/kpis - Inventory Summary Metrics
 router.get('/kpis', async (req, res) => {
     try {
-        const [itemRows] = await pool.promise().query('SELECT COUNT(*) as total_items FROM Items');
-        const [warehouseRows] = await pool.promise().query('SELECT COUNT(*) as total_warehouses FROM Warehouses');
-        const [stockRows] = await pool.promise().query('SELECT SUM(stock_quantity) as total_stock_units FROM Warehouse_Stocks');
+        const [itemCountRows] = await pool.promise().query('SELECT COUNT(*) as total_items FROM Items');
+        const [warehouseCountRows] = await pool.promise().query('SELECT COUNT(*) as total_warehouses FROM Warehouses');
+        const [stockRows] = await pool.promise().query('SELECT stock_quantity FROM Warehouse_Stocks');
 
         const [lowRows] = await pool.promise().query(`
-            SELECT 
-                COUNT(*) as total_low_stock_alerts,
-                SUM(CASE WHEN ws.stock_quantity <= (i.safety_threshold * 0.35) THEN 1 ELSE 0 END) as critical_alerts,
-                SUM(i.safety_threshold - ws.stock_quantity) as total_deficit_units
+            SELECT ws.stock_quantity, i.safety_threshold
             FROM Warehouse_Stocks ws
             JOIN Items i ON ws.item_id = i.item_id
             WHERE ws.stock_quantity < i.safety_threshold
         `);
 
+        const totalStockUnits = stockRows.reduce((sum, s) => sum + (s.stock_quantity || 0), 0);
+        const criticalAlerts = lowRows.filter(r => r.stock_quantity <= (r.safety_threshold * 0.35)).length;
+        const totalDeficitUnits = lowRows.reduce((sum, r) => sum + (r.safety_threshold - r.stock_quantity), 0);
+
         return res.json({
             success: true,
             kpis: {
-                totalItems: itemRows[0].total_items || 0,
-                totalWarehouses: warehouseRows[0].total_warehouses || 0,
-                totalStockUnits: stockRows[0].total_stock_units || 0,
-                totalLowStockAlerts: lowRows[0].total_low_stock_alerts || 0,
-                criticalAlerts: lowRows[0].critical_alerts || 0,
-                totalDeficitUnits: lowRows[0].total_deficit_units || 0
+                totalItems: itemCountRows[0].total_items || 0,
+                totalWarehouses: warehouseCountRows[0].total_warehouses || 0,
+                totalStockUnits,
+                totalLowStockAlerts: lowRows.length,
+                criticalAlerts,
+                totalDeficitUnits
             }
         });
     } catch (err) {
-        console.error('Inventory KPIs fallback:', err.message);
-
-        const lowStockItems = warehouseStocks.filter(ws => {
-            const item = items.find(i => i.item_id === ws.item_id);
-            return item && ws.stock_quantity < item.safety_threshold;
-        });
-
-        const totalDeficit = lowStockItems.reduce((sum, ws) => {
-            const item = items.find(i => i.item_id === ws.item_id);
-            return sum + (item ? item.safety_threshold - ws.stock_quantity : 0);
-        }, 0);
-
-        const criticalCount = lowStockItems.filter(ws => {
-            const item = items.find(i => i.item_id === ws.item_id);
-            return item && ws.stock_quantity <= (item.safety_threshold * 0.35);
-        }).length;
-
-        const totalStockUnits = warehouseStocks.reduce((sum, ws) => sum + ws.stock_quantity, 0);
-
-        return res.json({
-            success: true,
-            kpis: {
-                totalItems: items.length,
-                totalWarehouses: warehouses.length,
-                totalStockUnits,
-                totalLowStockAlerts: lowStockItems.length,
-                criticalAlerts: criticalCount,
-                totalDeficitUnits: totalDeficit
-            }
-        });
+        console.error('Inventory KPIs error:', err.message);
+        return res.status(500).json({ success: false, message: 'Failed to fetch inventory KPIs' });
     }
 });
 
@@ -975,69 +934,25 @@ router.get('/goods-monitoring', async (req, res) => {
 // 3.2 GET /api/inventory/goods-monitoring/kpis - Goods Monitoring Summary Metrics
 router.get('/goods-monitoring/kpis', async (req, res) => {
     try {
-        const [damagedRows] = await pool.promise().query(`
-            SELECT 
-                COUNT(*) as count,
-                COALESCE(SUM(quantity), 0) as total_units,
-                COALESCE(SUM(CASE WHEN quarantine_status = 'Quarantined' THEN quantity ELSE 0 END), 0) as active_units,
-                COALESCE(SUM(CASE WHEN quarantine_status = 'Written Off' OR quarantine_status = 'Disposed' THEN quantity ELSE 0 END), 0) as written_off_units
-            FROM Damaged_Inventory
-        `);
+        const [damagedRows] = await pool.promise().query(`SELECT quantity, quarantine_status, warehouse_id FROM Damaged_Inventory`);
+        const [expiredRows] = await pool.promise().query(`SELECT quantity, quarantine_status, warehouse_id FROM Expired_Inventory`);
 
-        const [expiredRows] = await pool.promise().query(`
-            SELECT 
-                COUNT(*) as count,
-                COALESCE(SUM(quantity), 0) as total_units,
-                COALESCE(SUM(CASE WHEN quarantine_status = 'Quarantined' THEN quantity ELSE 0 END), 0) as active_units,
-                COALESCE(SUM(CASE WHEN quarantine_status = 'Written Off' OR quarantine_status = 'Disposed' THEN quantity ELSE 0 END), 0) as written_off_units
-            FROM Expired_Inventory
-        `);
-
-        const [affectedWarehousesRows] = await pool.promise().query(`
-            SELECT COUNT(DISTINCT warehouse_id) as affected_warehouses FROM (
-                SELECT warehouse_id FROM Damaged_Inventory WHERE quarantine_status = 'Quarantined'
-                UNION
-                SELECT warehouse_id FROM Expired_Inventory WHERE quarantine_status = 'Quarantined'
-            ) q
-        `);
-
-        const damagedUnits = parseInt(damagedRows[0]?.total_units || 0, 10);
-        const expiredUnits = parseInt(expiredRows[0]?.total_units || 0, 10);
-        const totalQuarantinedUnits = damagedUnits + expiredUnits;
-        const activeQuarantineUnits = parseInt(damagedRows[0]?.active_units || 0, 10) + parseInt(expiredRows[0]?.active_units || 0, 10);
-        const writtenOffUnits = parseInt(damagedRows[0]?.written_off_units || 0, 10) + parseInt(expiredRows[0]?.written_off_units || 0, 10);
-
-        return res.json({
-            success: true,
-            kpis: {
-                totalQuarantinedRecords: (damagedRows[0]?.count || 0) + (expiredRows[0]?.count || 0),
-                totalQuarantinedUnits,
-                damagedUnits,
-                expiredUnits,
-                activeQuarantineUnits,
-                writtenOffUnits,
-                affectedWarehouses: affectedWarehousesRows[0]?.affected_warehouses || 0
-            }
-        });
-    } catch (err) {
-        console.error('Goods Monitoring KPIs fallback:', err.message);
-
-        const damagedUnits = damagedInventory.reduce((sum, d) => sum + d.quantity, 0);
-        const expiredUnits = expiredInventory.reduce((sum, e) => sum + e.quantity, 0);
-        const activeDamaged = damagedInventory.filter(d => d.quarantine_status === 'Quarantined').reduce((sum, d) => sum + d.quantity, 0);
-        const activeExpired = expiredInventory.filter(e => e.quarantine_status === 'Quarantined').reduce((sum, e) => sum + e.quantity, 0);
-        const writtenOff = damagedInventory.filter(d => d.quarantine_status !== 'Quarantined').reduce((sum, d) => sum + d.quantity, 0) +
-                           expiredInventory.filter(e => e.quarantine_status !== 'Quarantined').reduce((sum, e) => sum + e.quantity, 0);
+        const damagedUnits = damagedRows.reduce((sum, d) => sum + (d.quantity || 0), 0);
+        const expiredUnits = expiredRows.reduce((sum, e) => sum + (e.quantity || 0), 0);
+        const activeDamaged = damagedRows.filter(d => d.quarantine_status === 'Quarantined').reduce((sum, d) => sum + (d.quantity || 0), 0);
+        const activeExpired = expiredRows.filter(e => e.quarantine_status === 'Quarantined').reduce((sum, e) => sum + (e.quantity || 0), 0);
+        const writtenOff = damagedRows.filter(d => d.quarantine_status === 'Written Off' || d.quarantine_status === 'Disposed').reduce((sum, d) => sum + (d.quantity || 0), 0) +
+                           expiredRows.filter(e => e.quarantine_status === 'Written Off' || e.quarantine_status === 'Disposed').reduce((sum, e) => sum + (e.quantity || 0), 0);
 
         const affectedWSet = new Set([
-            ...damagedInventory.filter(d => d.quarantine_status === 'Quarantined').map(d => d.warehouse_id),
-            ...expiredInventory.filter(e => e.quarantine_status === 'Quarantined').map(e => e.warehouse_id)
+            ...damagedRows.filter(d => d.quarantine_status === 'Quarantined').map(d => d.warehouse_id),
+            ...expiredRows.filter(e => e.quarantine_status === 'Quarantined').map(e => e.warehouse_id)
         ]);
 
         return res.json({
             success: true,
             kpis: {
-                totalQuarantinedRecords: damagedInventory.length + expiredInventory.length,
+                totalQuarantinedRecords: damagedRows.length + expiredRows.length,
                 totalQuarantinedUnits: damagedUnits + expiredUnits,
                 damagedUnits,
                 expiredUnits,
@@ -1046,6 +961,9 @@ router.get('/goods-monitoring/kpis', async (req, res) => {
                 affectedWarehouses: affectedWSet.size
             }
         });
+    } catch (err) {
+        console.error('Goods Monitoring KPIs error:', err.message);
+        return res.status(500).json({ success: false, message: 'Failed to fetch goods monitoring KPIs' });
     }
 });
 
@@ -1317,12 +1235,25 @@ router.put('/goods-monitoring/:type/:id/status', async (req, res) => {
         const table = isDamaged ? 'Damaged_Inventory' : 'Expired_Inventory';
         const idCol = isDamaged ? 'damage_id' : 'expiry_id';
 
+        let newNotes = null;
+        if (notes && notes.trim()) {
+            const [existingRows] = await pool.promise().query(
+                `SELECT notes FROM ${table} WHERE ${idCol} = ?`,
+                [recordId]
+            );
+            if (existingRows.length === 0) {
+                return res.status(404).json({ error: 'Quarantine record not found.' });
+            }
+            const currentNotes = existingRows[0].notes || '';
+            newNotes = `${currentNotes} | [Status Update: ${status}] ${notes.trim()}`;
+        }
+
         let updateSql = `UPDATE ${table} SET quarantine_status = ?`;
         const params = [status];
 
-        if (notes && notes.trim()) {
-            updateSql += ', notes = CONCAT(COALESCE(notes, ""), " | [Status Update: ", ?, "] ", ?)';
-            params.push(status, notes.trim());
+        if (newNotes !== null) {
+            updateSql += ', notes = ?';
+            params.push(newNotes);
         }
 
         updateSql += ` WHERE ${idCol} = ?`;

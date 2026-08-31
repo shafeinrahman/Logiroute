@@ -141,7 +141,7 @@ router.get('/', async (req, res) => {
         });
     } catch (err) {
         console.error('Returns query fallback:', err.message);
-            return res.status(500).json({ success: false, message: 'Failed to fetch return KPIs' });
+        return res.status(500).json({ success: false, message: 'Failed to fetch return KPIs' });
 
         let filtered = returns.map(r => {
             const ord = orders.find(o => o.order_id === r.order_id) || {
