@@ -2205,7 +2205,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const search = searchInventoryItem.value.trim().toLowerCase();
         const wId = filterWarehouse.value;
 
-        let filtered = matrix;
+        let filtered = matrix || [];
         if (wId && wId !== 'all') {
             const targetId = parseInt(wId, 10);
             filtered = filtered.filter(m => m.warehouse_id === targetId);
@@ -2213,9 +2213,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (search) {
             filtered = filtered.filter(m =>
-                m.item_name.toLowerCase().includes(search) ||
-                m.sku.toLowerCase().includes(search) ||
-                m.warehouse_name.toLowerCase().includes(search)
+                (m.item_name || m.name || '').toLowerCase().includes(search) ||
+                (m.sku || '').toLowerCase().includes(search) ||
+                (m.warehouse_name || '').toLowerCase().includes(search)
             );
         }
 
@@ -2225,12 +2225,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         stockMatrixTableBody.innerHTML = filtered.map(row => {
-            const isLow = row.is_low_stock || row.stock_quantity < row.safety_threshold;
+            const qty = row.stock_quantity !== undefined ? row.stock_quantity : 0;
+            const isLow = row.is_low_stock || qty < row.safety_threshold;
+            const deficit = row.deficit !== undefined ? Math.max(0, row.deficit) : Math.max(0, row.safety_threshold - qty);
+            const itemName = row.item_name || row.name || '';
+
             let statusBadge = `<span class="badge badge-delivered" style="font-size: 0.725rem;">Optimal</span>`;
-            if (row.stock_quantity === 0) {
+            if (qty === 0) {
                 statusBadge = `<span class="badge badge-express" style="font-size: 0.725rem;">Out of Stock</span>`;
             } else if (isLow) {
-                statusBadge = `<span class="badge badge-pending" style="font-size: 0.725rem;">Low Stock (-${row.deficit || (row.safety_threshold - row.stock_quantity)})</span>`;
+                statusBadge = `<span class="badge badge-pending" style="font-size: 0.725rem;">Low Stock (-${deficit})</span>`;
             }
 
             const stockColor = isLow ? 'var(--accent-danger)' : 'var(--text-primary)';
@@ -2242,14 +2246,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="font-size: 0.75rem; color: var(--text-muted);">${row.location_zone}</div>
                     </td>
                     <td>
-                        <span style="font-weight: 600; color: var(--text-primary);">${row.item_name}</span>
+                        <span style="font-weight: 600; color: var(--text-primary);">${itemName}</span>
                         <div style="font-family: monospace; font-size: 0.75rem; color: var(--text-muted);">${row.sku}</div>
                     </td>
-                    <td><strong style="color: ${stockColor}; font-size: 0.95rem;">${row.stock_quantity}</strong> units</td>
+                    <td><strong style="color: ${stockColor}; font-size: 0.95rem;">${qty}</strong> units</td>
                     <td>${row.safety_threshold} units</td>
                     <td>${statusBadge}</td>
                     <td style="text-align: right;">
-                        <button class="btn btn-outline btn-sm matrix-restock-btn" data-warehouse-id="${row.warehouse_id}" data-warehouse-name="${row.warehouse_name}" data-item-id="${row.item_id}" data-item-name="${row.item_name}" data-stock="${row.stock_quantity}" data-threshold="${row.safety_threshold}">
+                        <button class="btn btn-outline btn-sm matrix-restock-btn" data-warehouse-id="${row.warehouse_id}" data-warehouse-name="${row.warehouse_name}" data-item-id="${row.item_id}" data-item-name="${itemName}" data-stock="${qty}" data-threshold="${row.safety_threshold}">
                             + Restock
                         </button>
                     </td>
@@ -3082,18 +3086,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadStockMatrixModule() {
         try {
-            const [kpiRes, pivotRes, matrixRes, warehousesRes] = await Promise.all([
-                api.getStockMatrixKPIs(),
-                api.getStockMatrixPivot(),
-                api.getStockMatrix(),
-                api.getWarehouses()
+            const [kpiRes, pivotRes, matrixRes, warehousesRes, itemsRes] = await Promise.all([
+                api.getStockMatrixKPIs().catch(() => ({ success: false })),
+                api.getStockMatrixPivot().catch(() => ({ success: false })),
+                api.getStockMatrix().catch(() => ({ success: false })),
+                api.getWarehouses().catch(() => ({ success: false })),
+                api.getItems().catch(() => ({ success: false }))
             ]);
 
-            if (warehousesRes.success && warehousesRes.warehouses) {
+            if (itemsRes && itemsRes.success && itemsRes.items) {
+                catalogItems = itemsRes.items;
+            }
+
+            if (warehousesRes && warehousesRes.success && warehousesRes.warehouses) {
                 warehousesList = warehousesRes.warehouses;
             }
 
-            if (kpiRes.success && kpiRes.kpis) {
+            if (kpiRes && kpiRes.success && kpiRes.kpis) {
                 stockMatrixKPIs = kpiRes.kpis;
                 if (smKpiTotalItems) smKpiTotalItems.textContent = kpiRes.kpis.totalCatalogItems;
                 if (smKpiTotalWarehouses) smKpiTotalWarehouses.textContent = kpiRes.kpis.totalWarehouses;
@@ -3102,12 +3111,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (smKpiQuarantinedUnits) smKpiQuarantinedUnits.textContent = `${kpiRes.kpis.totalQuarantinedUnits} units`;
             }
 
-            if (pivotRes.success) {
+            if (pivotRes && pivotRes.success) {
                 stockMatrixPivotData = pivotRes;
                 renderStockMatrixPivot(pivotRes);
             }
 
-            if (matrixRes.success && matrixRes.matrix) {
+            if (matrixRes && matrixRes.success && matrixRes.matrix) {
                 stockMatrixFlatData = matrixRes.matrix;
                 renderStockMatrixDetailedList(matrixRes.matrix);
             }
@@ -3119,7 +3128,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderStockMatrixPivot(pivotData) {
         if (!matrixPivotThead || !matrixPivotTbody || !pivotData) return;
 
-        const { warehouses, matrix, summary } = pivotData;
+        const warehouses = pivotData.warehouses || [];
+        const matrix = pivotData.matrix || pivotData.pivot || [];
+        const summary = pivotData.summary || {};
         const search = searchMatrixInput?.value.trim().toLowerCase() || '';
         const focusWarehouseId = filterMatrixWarehouse?.value;
         const statusFilter = filterMatrixStatus?.value;
@@ -3153,17 +3164,21 @@ document.addEventListener('DOMContentLoaded', () => {
         let filteredRows = matrix || [];
         if (search) {
             filteredRows = filteredRows.filter(r =>
-                r.item_name.toLowerCase().includes(search) ||
-                r.sku.toLowerCase().includes(search)
+                (r.item_name || r.name || '').toLowerCase().includes(search) ||
+                (r.sku || '').toLowerCase().includes(search)
             );
         }
 
         if (statusFilter && statusFilter !== 'all') {
             filteredRows = filteredRows.filter(r => {
-                if (statusFilter === 'Healthy') return r.network_health_status === 'Optimal';
-                if (statusFilter === 'Low Stock') return r.network_health_status === 'Low Stock' || r.network_health_status === 'Critical Shortage';
-                if (statusFilter === 'Critical') return r.network_health_status === 'Critical Shortage';
-                if (statusFilter === 'Out of Stock') return r.total_network_stock === 0 || r.low_stock_warehouses_count > 0;
+                const health = r.network_health_status || r.overall_status || '';
+                const total = r.total_network_stock !== undefined ? r.total_network_stock : r.total_stock;
+                const lowCount = r.low_stock_warehouses_count !== undefined ? r.low_stock_warehouses_count : (r.low_stock_warehouses || 0);
+
+                if (statusFilter === 'Healthy') return health === 'Optimal' || health === 'Healthy';
+                if (statusFilter === 'Low Stock') return health === 'Low Stock' || health === 'Critical Shortage' || health === 'Attention Needed' || lowCount > 0;
+                if (statusFilter === 'Critical') return health === 'Critical Shortage' || health === 'Critical';
+                if (statusFilter === 'Out of Stock') return total === 0 || health === 'Out of Stock' || lowCount > 0;
                 return true;
             });
         }
@@ -3185,41 +3200,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
         matrixPivotTbody.innerHTML = filteredRows.map(row => {
             let cellsHtml = '';
+            const itemName = row.item_name || row.name || 'Item';
+            const totalUnits = row.total_network_stock !== undefined ? row.total_network_stock : (row.total_stock !== undefined ? row.total_stock : 0);
+            const lowCount = row.low_stock_warehouses_count !== undefined ? row.low_stock_warehouses_count : (row.low_stock_warehouses || 0);
+            const healthStatus = row.network_health_status || row.overall_status || 'Optimal';
 
             warehouses.forEach(w => {
-                const stockInfo = row.warehouse_stocks[w.warehouse_id] || {
+                const stockInfo = (row.warehouse_stocks && row.warehouse_stocks[w.warehouse_id]) ? row.warehouse_stocks[w.warehouse_id] : {
                     stock_quantity: 0,
                     is_low_stock: true,
                     status: 'Out of Stock',
-                    quarantined_units: 0
+                    quarantined_units: 0,
+                    quarantined_quantity: 0
                 };
+
+                const qty = stockInfo.stock_quantity !== undefined ? stockInfo.stock_quantity : 0;
+                const qUnits = stockInfo.quarantined_units !== undefined ? stockInfo.quarantined_units : (stockInfo.quarantined_quantity || 0);
+                const isLow = stockInfo.is_low_stock !== undefined ? stockInfo.is_low_stock : (qty < row.safety_threshold);
 
                 let boxClass = 'status-healthy';
                 let tagClass = 'matrix-tag-healthy';
                 let tagText = 'Optimal';
 
-                if (stockInfo.stock_quantity === 0) {
+                if (qty === 0) {
                     boxClass = 'status-out';
                     tagClass = 'matrix-tag-out';
                     tagText = 'Out of Stock';
-                } else if (stockInfo.status === 'Critical') {
+                } else if (stockInfo.status === 'Critical' || qty <= (row.safety_threshold * 0.35)) {
                     boxClass = 'status-critical';
                     tagClass = 'matrix-tag-critical';
                     tagText = 'Critical';
-                } else if (stockInfo.is_low_stock) {
+                } else if (isLow || stockInfo.status === 'Low Stock') {
                     boxClass = 'status-low';
                     tagClass = 'matrix-tag-low';
                     tagText = 'Low Stock';
                 }
 
-                const quarantineHtml = stockInfo.quarantined_units > 0 
-                    ? `<div class="matrix-quarantine-pill" title="${stockInfo.quarantined_units} quarantined units locked">🔒 ${stockInfo.quarantined_units} Q</div>` 
+                const quarantineHtml = qUnits > 0 
+                    ? `<div class="matrix-quarantine-pill" title="${qUnits} quarantined units locked">🔒 ${qUnits} Q</div>` 
                     : '';
 
                 cellsHtml += `
                     <td class="matrix-stock-cell">
-                        <div class="matrix-stock-box ${boxClass}" title="${row.item_name} at ${w.name}: ${stockInfo.stock_quantity} units">
-                            <span class="matrix-stock-val">${stockInfo.stock_quantity}</span>
+                        <div class="matrix-stock-box ${boxClass}" title="${itemName} at ${w.name}: ${qty} units">
+                            <span class="matrix-stock-val">${qty}</span>
                             <span class="matrix-stock-tag ${tagClass}">${tagText}</span>
                             ${quarantineHtml}
                         </div>
@@ -3228,17 +3252,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             let healthBadge = `<span class="badge badge-delivered" style="font-size: 0.75rem;">Optimal</span>`;
-            if (row.network_health_status === 'Critical Shortage') {
-                healthBadge = `<span class="badge badge-critical" style="font-size: 0.75rem;">Critical (${row.low_stock_warehouses_count} Low)</span>`;
-            } else if (row.network_health_status === 'Low Stock') {
-                healthBadge = `<span class="badge badge-warning" style="font-size: 0.75rem;">Shortage (${row.low_stock_warehouses_count} Low)</span>`;
+            if (healthStatus === 'Critical Shortage' || healthStatus === 'Critical' || totalUnits === 0) {
+                healthBadge = `<span class="badge badge-critical" style="font-size: 0.75rem;">Critical (${lowCount} Low)</span>`;
+            } else if (healthStatus === 'Low Stock' || healthStatus === 'Attention Needed' || lowCount > 0) {
+                healthBadge = `<span class="badge badge-warning" style="font-size: 0.75rem;">Shortage (${lowCount} Low)</span>`;
             }
 
             return `
                 <tr>
                     <td>
                         <div class="matrix-item-info">
-                            <span class="matrix-item-title">${row.item_name}</span>
+                            <span class="matrix-item-title">${itemName}</span>
                             <span class="matrix-item-sku">${row.sku}</span>
                         </div>
                     </td>
@@ -3247,7 +3271,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     ${cellsHtml}
                     <td class="matrix-total-cell">
-                        <span class="matrix-total-val">${row.total_network_stock}</span>
+                        <span class="matrix-total-val">${totalUnits}</span>
                         <div style="font-size: 0.7rem; color: var(--text-muted);">units</div>
                     </td>
                     <td style="text-align: center;">
@@ -3255,7 +3279,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     <td style="text-align: right;">
                         <div style="display: flex; gap: 0.35rem; justify-content: flex-end;">
-                            <button class="btn btn-outline btn-sm quick-transfer-btn" data-item-id="${row.item_id}" data-item-name="${row.item_name}" title="Transfer this item between facilities">
+                            <button class="btn btn-outline btn-sm quick-transfer-btn" data-item-id="${row.item_id}" data-item-name="${itemName}" title="Transfer this item between facilities">
                                 ⇄ Transfer
                             </button>
                         </div>
@@ -3288,18 +3312,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (search) {
             filtered = filtered.filter(m =>
-                m.item_name.toLowerCase().includes(search) ||
-                m.sku.toLowerCase().includes(search) ||
-                m.warehouse_name.toLowerCase().includes(search)
+                (m.item_name || m.name || '').toLowerCase().includes(search) ||
+                (m.sku || '').toLowerCase().includes(search) ||
+                (m.warehouse_name || '').toLowerCase().includes(search)
             );
         }
 
         if (statusFilter && statusFilter !== 'all') {
             filtered = filtered.filter(m => {
-                if (statusFilter === 'Healthy') return m.stock_status === 'Optimal';
-                if (statusFilter === 'Low Stock') return m.is_low_stock;
-                if (statusFilter === 'Critical') return m.stock_status === 'Critical';
-                if (statusFilter === 'Out of Stock') return m.stock_quantity === 0;
+                const qty = m.stock_quantity !== undefined ? m.stock_quantity : 0;
+                const isLow = m.is_low_stock !== undefined ? m.is_low_stock : (qty < m.safety_threshold);
+                const status = m.stock_status || '';
+
+                if (statusFilter === 'Healthy') return status === 'Optimal' || status === 'Healthy';
+                if (statusFilter === 'Low Stock') return isLow || status === 'Low Stock' || status === 'Critical';
+                if (statusFilter === 'Critical') return status === 'Critical' || (qty <= (m.safety_threshold * 0.35) && qty > 0);
+                if (statusFilter === 'Out of Stock') return qty === 0 || status === 'Out of Stock';
                 return true;
             });
         }
@@ -3314,18 +3342,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         matrixListTableBody.innerHTML = filtered.map(row => {
+            const qty = row.stock_quantity !== undefined ? row.stock_quantity : 0;
+            const isLow = row.is_low_stock !== undefined ? row.is_low_stock : (qty < row.safety_threshold);
+            const deficit = row.deficit !== undefined ? Math.max(0, row.deficit) : Math.max(0, row.safety_threshold - qty);
+            const qUnits = row.quarantined_units !== undefined ? row.quarantined_units : (row.quarantined_quantity || 0);
+            const itemName = row.item_name || row.name || '';
+
             let statusBadge = `<span class="badge badge-delivered" style="font-size: 0.725rem;">Optimal</span>`;
-            if (row.stock_quantity === 0) {
+            if (qty === 0) {
                 statusBadge = `<span class="badge badge-critical" style="font-size: 0.725rem;">Out of Stock</span>`;
-            } else if (row.stock_status === 'Critical') {
-                statusBadge = `<span class="badge badge-critical" style="font-size: 0.725rem;">Critical (-${row.deficit})</span>`;
-            } else if (row.is_low_stock) {
-                statusBadge = `<span class="badge badge-warning" style="font-size: 0.725rem;">Low Stock (-${row.deficit})</span>`;
+            } else if (row.stock_status === 'Critical' || qty <= (row.safety_threshold * 0.35)) {
+                statusBadge = `<span class="badge badge-critical" style="font-size: 0.725rem;">Critical (-${deficit})</span>`;
+            } else if (isLow || row.stock_status === 'Low Stock') {
+                statusBadge = `<span class="badge badge-warning" style="font-size: 0.725rem;">Low Stock (-${deficit})</span>`;
             }
 
-            const stockColor = row.is_low_stock ? 'var(--accent-danger)' : 'var(--text-primary)';
-            const quarantinedHtml = row.quarantined_units > 0 
-                ? `<span class="matrix-quarantine-pill">🔒 ${row.quarantined_units} units</span>` 
+            const stockColor = isLow ? 'var(--accent-danger)' : 'var(--text-primary)';
+            const quarantinedHtml = qUnits > 0 
+                ? `<span class="matrix-quarantine-pill">🔒 ${qUnits} units</span>` 
                 : `<span style="color: var(--text-muted); font-size: 0.8rem;">0</span>`;
 
             return `
@@ -3335,10 +3369,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="font-size: 0.75rem; color: var(--text-muted);">${row.location_zone}</div>
                     </td>
                     <td>
-                        <span style="font-weight: 600; color: var(--text-primary);">${row.item_name}</span>
+                        <span style="font-weight: 600; color: var(--text-primary);">${itemName}</span>
                         <div style="font-family: monospace; font-size: 0.75rem; color: var(--text-muted);">${row.sku}</div>
                     </td>
-                    <td><strong style="color: ${stockColor}; font-size: 0.95rem;">${row.stock_quantity}</strong> units</td>
+                    <td><strong style="color: ${stockColor}; font-size: 0.95rem;">${qty}</strong> units</td>
                     <td>${row.safety_threshold} units</td>
                     <td>${quarantinedHtml}</td>
                     <td>${statusBadge}</td>

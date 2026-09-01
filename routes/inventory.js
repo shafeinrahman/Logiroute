@@ -48,19 +48,25 @@ router.get('/stock-matrix', async (req, res) => {
                     .filter(e => e.warehouse_id === w.warehouse_id && e.item_id === i.item_id)
                     .reduce((sum, e) => sum + (e.quantity || 0), 0);
 
+                const isLow = qty < i.safety_threshold;
+                const deficit = Math.max(0, i.safety_threshold - qty);
+
                 rows.push({
                     warehouse_id: w.warehouse_id,
                     warehouse_name: w.warehouse_name,
                     location_zone: w.location_zone,
                     item_id: i.item_id,
                     item_name: i.item_name,
+                    name: i.item_name,
                     sku: i.sku,
                     safety_threshold: i.safety_threshold,
                     stock_quantity: qty,
-                    deficit: i.safety_threshold - qty,
-                    stock_percentage: Math.round((qty / i.safety_threshold) * 1000) / 10,
+                    deficit: deficit,
+                    stock_percentage: i.safety_threshold > 0 ? Math.round((qty / i.safety_threshold) * 1000) / 10 : 100,
                     stock_status,
-                    quarantined_quantity: dmgQty + expQty
+                    is_low_stock: isLow,
+                    quarantined_quantity: dmgQty + expQty,
+                    quarantined_units: dmgQty + expQty
                 });
             });
         });
@@ -103,19 +109,25 @@ router.get('/stock-matrix', async (req, res) => {
                     .filter(e => e.warehouse_id === w.warehouse_id && e.item_id === i.item_id && e.quarantine_status === 'Quarantined')
                     .reduce((sum, e) => sum + e.quantity, 0);
 
+                const isLow = qty < i.safety_threshold;
+                const deficit = Math.max(0, i.safety_threshold - qty);
+
                 matrix.push({
                     warehouse_id: w.warehouse_id,
                     warehouse_name: w.name,
                     location_zone: w.location_zone,
                     item_id: i.item_id,
                     item_name: i.name,
+                    name: i.name,
                     sku: i.sku,
                     safety_threshold: i.safety_threshold,
                     stock_quantity: qty,
-                    deficit: Math.max(0, i.safety_threshold - qty),
-                    stock_percentage: parseFloat(((qty / i.safety_threshold) * 100).toFixed(1)),
+                    deficit: deficit,
+                    stock_percentage: i.safety_threshold > 0 ? parseFloat(((qty / i.safety_threshold) * 100).toFixed(1)) : 100,
                     stock_status: status,
-                    quarantined_quantity: dmgCount + expCount
+                    is_low_stock: isLow,
+                    quarantined_quantity: dmgCount + expCount,
+                    quarantined_units: dmgCount + expCount
                 });
             });
         });
@@ -189,16 +201,20 @@ router.get('/stock-matrix/pivot', async (req, res) => {
                 totalQuarantinedNetwork += quarantinedQty;
 
                 let cellStatus = 'Healthy';
+                let isLowStock = false;
                 if (qty === 0) {
                     cellStatus = 'Out of Stock';
+                    isLowStock = true;
                     outOfStockNodesCount++;
                     lowCountForItem++;
                 } else if (qty <= (item.safety_threshold * 0.35)) {
                     cellStatus = 'Critical';
+                    isLowStock = true;
                     lowStockNodesCount++;
                     lowCountForItem++;
                 } else if (qty < item.safety_threshold) {
                     cellStatus = 'Low Stock';
+                    isLowStock = true;
                     lowStockNodesCount++;
                     lowCountForItem++;
                 } else {
@@ -208,25 +224,43 @@ router.get('/stock-matrix/pivot', async (req, res) => {
                 stocksByWarehouse[w.warehouse_id] = {
                     stock_quantity: qty,
                     quarantined_quantity: quarantinedQty,
+                    quarantined_units: quarantinedQty,
                     status: cellStatus,
+                    is_low_stock: isLowStock,
                     deficit: Math.max(0, item.safety_threshold - qty),
-                    percentage: parseFloat(((qty / item.safety_threshold) * 100).toFixed(1))
+                    percentage: item.safety_threshold > 0 ? parseFloat(((qty / item.safety_threshold) * 100).toFixed(1)) : 100
                 };
             });
 
-            let overallStatus = 'Healthy';
-            if (itemTotalStock === 0) overallStatus = 'Out of Stock';
-            else if (lowCountForItem > 0) overallStatus = 'Attention Needed';
+            let overallStatus = 'Optimal';
+            let networkHealthStatus = 'Optimal';
+            if (itemTotalStock === 0) {
+                overallStatus = 'Out of Stock';
+                networkHealthStatus = 'Out of Stock';
+            } else if (lowCountForItem > 0) {
+                if (itemTotalStock <= (item.safety_threshold * 0.35 * warehousesList.length) || lowCountForItem >= Math.ceil(warehousesList.length / 2)) {
+                    overallStatus = 'Critical Shortage';
+                    networkHealthStatus = 'Critical Shortage';
+                } else {
+                    overallStatus = 'Low Stock';
+                    networkHealthStatus = 'Low Stock';
+                }
+            }
 
             return {
                 item_id: item.item_id,
                 name: item.name,
+                item_name: item.name,
                 sku: item.sku,
                 safety_threshold: item.safety_threshold,
                 total_stock: itemTotalStock,
+                total_network_stock: itemTotalStock,
                 total_quarantined: itemTotalQuarantined,
+                total_quarantined_units: itemTotalQuarantined,
                 overall_status: overallStatus,
+                network_health_status: networkHealthStatus,
                 low_stock_warehouses: lowCountForItem,
+                low_stock_warehouses_count: lowCountForItem,
                 warehouse_stocks: stocksByWarehouse
             };
         });
@@ -246,7 +280,8 @@ router.get('/stock-matrix/pivot', async (req, res) => {
                 lowStockNodesCount,
                 outOfStockNodesCount
             },
-            pivot: pivotRows
+            pivot: pivotRows,
+            matrix: pivotRows
         });
     } catch (err) {
         console.error('Pivot Matrix fallback:', err.message);
@@ -281,16 +316,20 @@ router.get('/stock-matrix/pivot', async (req, res) => {
                 totalQuarantinedNetwork += quarantinedQty;
 
                 let cellStatus = 'Healthy';
+                let isLowStock = false;
                 if (qty === 0) {
                     cellStatus = 'Out of Stock';
+                    isLowStock = true;
                     outOfStockNodesCount++;
                     lowCountForItem++;
                 } else if (qty <= (item.safety_threshold * 0.35)) {
                     cellStatus = 'Critical';
+                    isLowStock = true;
                     lowStockNodesCount++;
                     lowCountForItem++;
                 } else if (qty < item.safety_threshold) {
                     cellStatus = 'Low Stock';
+                    isLowStock = true;
                     lowStockNodesCount++;
                     lowCountForItem++;
                 } else {
@@ -300,25 +339,43 @@ router.get('/stock-matrix/pivot', async (req, res) => {
                 stocksByWarehouse[w.warehouse_id] = {
                     stock_quantity: qty,
                     quarantined_quantity: quarantinedQty,
+                    quarantined_units: quarantinedQty,
                     status: cellStatus,
+                    is_low_stock: isLowStock,
                     deficit: Math.max(0, item.safety_threshold - qty),
-                    percentage: parseFloat(((qty / item.safety_threshold) * 100).toFixed(1))
+                    percentage: item.safety_threshold > 0 ? parseFloat(((qty / item.safety_threshold) * 100).toFixed(1)) : 100
                 };
             });
 
-            let overallStatus = 'Healthy';
-            if (itemTotalStock === 0) overallStatus = 'Out of Stock';
-            else if (lowCountForItem > 0) overallStatus = 'Attention Needed';
+            let overallStatus = 'Optimal';
+            let networkHealthStatus = 'Optimal';
+            if (itemTotalStock === 0) {
+                overallStatus = 'Out of Stock';
+                networkHealthStatus = 'Out of Stock';
+            } else if (lowCountForItem > 0) {
+                if (itemTotalStock <= (item.safety_threshold * 0.35 * warehouses.length) || lowCountForItem >= Math.ceil(warehouses.length / 2)) {
+                    overallStatus = 'Critical Shortage';
+                    networkHealthStatus = 'Critical Shortage';
+                } else {
+                    overallStatus = 'Low Stock';
+                    networkHealthStatus = 'Low Stock';
+                }
+            }
 
             return {
                 item_id: item.item_id,
                 name: item.name,
+                item_name: item.name,
                 sku: item.sku,
                 safety_threshold: item.safety_threshold,
                 total_stock: itemTotalStock,
+                total_network_stock: itemTotalStock,
                 total_quarantined: itemTotalQuarantined,
+                total_quarantined_units: itemTotalQuarantined,
                 overall_status: overallStatus,
+                network_health_status: networkHealthStatus,
                 low_stock_warehouses: lowCountForItem,
+                low_stock_warehouses_count: lowCountForItem,
                 warehouse_stocks: stocksByWarehouse
             };
         });
@@ -338,7 +395,8 @@ router.get('/stock-matrix/pivot', async (req, res) => {
                 lowStockNodesCount,
                 outOfStockNodesCount
             },
-            pivot: pivotRows
+            pivot: pivotRows,
+            matrix: pivotRows
         });
     }
 });
@@ -383,8 +441,42 @@ router.get('/matrix/kpis', async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('Matrix KPIs error:', err.message);
-        return res.status(500).json({ success: false, message: 'Failed to fetch matrix KPIs' });
+        console.error('Matrix KPIs fallback:', err.message);
+        const totalItems = items.length;
+        const totalWarehouses = warehouses.length;
+        const totalStoragePoints = totalItems * totalWarehouses;
+        const totalStockUnits = warehouseStocks.reduce((sum, s) => sum + (s.stock_quantity || 0), 0);
+
+        const lowStockRecords = [];
+        warehouses.forEach(w => {
+            items.forEach(i => {
+                const stock = warehouseStocks.find(ws => ws.warehouse_id === w.warehouse_id && ws.item_id === i.item_id);
+                const qty = stock ? stock.stock_quantity : 0;
+                if (qty < i.safety_threshold) {
+                    lowStockRecords.push({ qty, threshold: i.safety_threshold });
+                }
+            });
+        });
+
+        const outOfStockNodes = lowStockRecords.filter(r => r.qty === 0).length;
+        const criticalAlerts = lowStockRecords.filter(r => r.qty <= (r.threshold * 0.35)).length;
+        const totalQuarantinedUnits =
+            damagedInventory.filter(d => d.quarantine_status === 'Quarantined').reduce((sum, d) => sum + d.quantity, 0) +
+            expiredInventory.filter(e => e.quarantine_status === 'Quarantined').reduce((sum, e) => sum + e.quantity, 0);
+
+        return res.json({
+            success: true,
+            kpis: {
+                totalCatalogItems: totalItems,
+                totalWarehouses: totalWarehouses,
+                totalStoragePoints: totalStoragePoints,
+                totalStockUnits: totalStockUnits,
+                totalLowStockAlerts: lowStockRecords.length,
+                outOfStockNodes,
+                criticalAlerts,
+                totalQuarantinedUnits
+            }
+        });
     }
 });
 
